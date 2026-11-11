@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "portcheck"
+version = "0.1.0"
+description = "Checks whether a CUDA-based AI inference workload can move from NVIDIA to AMD ROCm, and proves it with measurements."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Abhijit Manepatil" }]
+keywords = ["cuda", "rocm", "amd", "nvidia", "inference", "mcp"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "pydantic>=2",
+  "pyyaml",
+  "typer",
+  "numpy",
+  "safetensors",
+  "mcp",
+  # tomllib is in the standard library from Python 3.11; see docs/SPEC_DEVIATIONS.md.
+  "tomli; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+run = ["torch", "transformers"]
+dev = ["pytest", "ruff", "torch", "transformers"]
+
+[project.scripts]
+portcheck = "portcheck.cli:app"
+portcheck-mcp = "portcheck.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/portcheck"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "skills", "examples", "tests", "docs", "README.md", "LICENSE"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+extend-exclude = ["examples"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]  # line length is handled by `ruff format`
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

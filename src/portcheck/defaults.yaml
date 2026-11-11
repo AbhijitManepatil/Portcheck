@@ -1,0 +1,24 @@
+# Built-in defaults. Override any key in <root>/portcheck.yaml.
+target:
+  # Both values are deliberately empty. A ROCm image tag and a PyTorch ROCm wheel
+  # index are version-specific and could not be verified from the build environment
+  # (spec section 3, rule 3). Setting verified values is a human release step
+  # (docs/RELEASE_TEST.md, step 2). Until they are set in portcheck.yaml, the fixes
+  # that need them return the error `config_missing`.
+  rocm_image: ""          # e.g. a rocm/pytorch image tag
+  torch_index_url: ""     # the PyTorch ROCm wheel index URL
+parity:
+  # Initial defaults, calibrated by a human during the release test.
+  noise_multiplier: 3.0
+  min_cosine: 0.999
+  min_top1_agreement: 0.99
+  max_abs_diff_floor:
+    float32: 0.001
+    float16: 0.05
+    bfloat16: 0.05
+bench:
+  warmup_batches: 2
+  measured_batches: 5
+scan:
+  exclude: [".git", ".venv", "node_modules", ".portcheck", "__pycache__"]
+  max_file_bytes: 1000000
