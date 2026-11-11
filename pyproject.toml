@@ -45,7 +45,7 @@ include = ["src", "skills", "examples", "tests", "docs", "README.md", "LICENSE"]
 line-length = 100
 target-version = "py310"
 src = ["src", "tests"]
-extend-exclude = ["examples"]
+extend-exclude = ["examples", "*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
