@@ -140,6 +140,9 @@ def test_pc008_url_needs_config(root):
         "--extra-index-url https://download.pytorch.org/whl/cu121\ntorch\nnvidia-cudnn-cu12\n"
     )
     plan = tools.plan_migration(tools.scan_repo(".")["run_id"])["run_id"]
+    default_url = load_config().target.torch_index_url
+    assert f"+--extra-index-url {default_url}\n" in tools.apply_step("S1", plan)["data"]["diff"]
+    (root / "portcheck.yaml").write_text("target:\n  torch_index_url: ''\n")
     env = tools.apply_step("S1", plan)
     assert env["error"]["code"] == "config_missing"
     assert "target.torch_index_url" in env["error"]["message"]
