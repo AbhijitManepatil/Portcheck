@@ -288,7 +288,8 @@ def _read_text(path: Path, max_bytes: int) -> str | None:
     try:
         if path.stat().st_size > max_bytes:
             return None
-        return path.read_bytes().decode("utf-8")
+        # utf-8-sig drops a leading byte-order mark, which would otherwise hide line 1.
+        return path.read_bytes().decode("utf-8-sig")
     except (OSError, UnicodeDecodeError):
         return None
 
@@ -308,13 +309,24 @@ def scan_repo(path: str = ".", config: Config | None = None) -> ScanResult:
     findings: list[Finding] = []
     files_scanned = 0
     for dirpath, dirnames, filenames in os.walk(target):
-        dirnames[:] = sorted(d for d in dirnames if d not in exclude)
+        # Skip excluded names and any virtualenv, whatever it is called. (A virtualenv
+        # given as the scan path itself is still scanned: that was asked for.)
+        dirnames[:] = sorted(
+            d
+            for d in dirnames
+            if d not in exclude and not (Path(dirpath) / d / "pyvenv.cfg").is_file()
+        )
         for filename in sorted(filenames):
             if filename in exclude:
                 continue
             full = Path(dirpath) / filename
             if not full.is_file():
                 continue
+            if full.is_symlink():
+                # Never read through a link that leaves the root.
+                resolved = full.resolve()
+                if resolved != root and root not in resolved.parents:
+                    continue
             files_scanned += 1
             rel_path = full.relative_to(target).as_posix()
             findings.extend(

@@ -13,7 +13,17 @@ from portcheck.audit import scanner as _scanner
 from portcheck.envelope import InvalidInputError, guarded, ok_envelope
 from portcheck.migrate import apply as _apply
 from portcheck.migrate import planner as _planner
-from portcheck.paths import create_run_dir, rel_to_root, run_dir, save_result, write_json
+from portcheck.paths import (
+    RUN_ID_RE,
+    RUN_KINDS,
+    create_run_dir,
+    read_json,
+    rel_to_root,
+    run_dir,
+    runs_dir,
+    save_result,
+    write_json,
+)
 
 
 def env_fingerprint() -> dict[str, Any]:
@@ -194,5 +204,63 @@ def build_report(
             f" ({', '.join(bits)})." if bits else "."
         )
         return ok_envelope(summary, data, run_id, result_path)
+
+    return guarded(run)
+
+
+def _describe_run(kind: str, directory: Any) -> str:
+    """One line about a stored run, read from its result file. Never raises."""
+    try:
+        if kind == "capture":
+            data = read_json(directory / "capture.json")
+            fp = data.get("fingerprint", {})
+            text = f"label {data.get('label')}, {fp.get('device_name') or fp.get('vendor')}"
+            text += f", workload {str(data.get('workload_sha256'))[:12]}"
+            return text + (", FAULT INJECTED" if data.get("fault_injected") else "")
+        data = read_json(directory / "result.json")
+        if kind == "scan":
+            c = data["counts"]
+            return f"{data['root']}: grade {data['grade']} ({c['red']} red, {c['yellow']} yellow, {c['green']} green)"
+        if kind == "plan":
+            auto = sum(1 for s in data["steps"] if s["kind"] == "auto")
+            return f"{len(data['steps'])} steps ({auto} auto) for {data['scan_id']}"
+        if kind == "compare":
+            return f"verdict {data['verdict']}: {data['reference']} vs {data['candidate']}"
+        if kind == "cost":
+            return f"{data['capture']} at {data['price_per_hour']} {data['currency']} per hour"
+        if kind == "report":
+            return str(data.get("report_file", ""))
+    except Exception:  # noqa: BLE001 - a damaged run folder must not break the listing
+        return "unreadable result"
+    return ""
+
+
+def list_runs(kind: str | None = None) -> dict[str, Any]:
+    """List the stored runs under ``.portcheck/runs`` (CLI only; not an MCP tool)."""
+
+    def run() -> dict[str, Any]:
+        if kind is not None and kind not in RUN_KINDS:
+            raise InvalidInputError(f"kind must be one of: {', '.join(RUN_KINDS)}.")
+        base = runs_dir()
+        rows = []
+        if base.is_dir():
+            for directory in base.iterdir():
+                match = RUN_ID_RE.match(directory.name)
+                if not match or not directory.is_dir():
+                    continue
+                if kind is not None and match.group(1) != kind:
+                    continue
+                rows.append(
+                    {
+                        "run_id": directory.name,
+                        "kind": match.group(1),
+                        "result_path": rel_to_root(directory),
+                        "detail": _describe_run(match.group(1), directory),
+                    }
+                )
+        # Run ids embed a UTC timestamp after the kind, so sort on that part.
+        rows.sort(key=lambda r: (r["run_id"].split("-", 1)[1], r["run_id"]))
+        what = f"{kind} runs" if kind else "runs"
+        return ok_envelope(f"{len(rows)} {what} under .portcheck/runs.", {"runs": rows})
 
     return guarded(run)

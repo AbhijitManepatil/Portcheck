@@ -98,6 +98,7 @@ def fix_pc009(text: str, filename: str, config: Config) -> str:
         tree = ast.parse(text)
     except (SyntaxError, ValueError):
         return text
+    starts = [node.lineno for node in tree.body]
     spans = [
         (node.lineno, node.end_lineno or node.lineno)
         for node in tree.body
@@ -105,14 +106,13 @@ def fix_pc009(text: str, filename: str, config: Config) -> str:
         and len(node.names) == 1
         and node.names[0].name == "pynvml"
         and node.names[0].asname is None
+        and starts.count(node.lineno) == 1  # alone on its line
     ]
     if not spans:
         return text
     newline = _newline(text)
     lines = text.splitlines(keepends=True)
     for start, end in sorted(spans, reverse=True):
-        if lines[start - 1].lstrip() != lines[start - 1] or ";" in "".join(lines[start - 1 : end]):
-            continue  # shares a line with another statement; leave for a person
         lines[start - 1 : end] = [_GUARDED_IMPORT.replace("\n", newline)]
     return "".join(lines)
 

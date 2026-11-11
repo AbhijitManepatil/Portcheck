@@ -203,6 +203,15 @@ def capture_run(
             raise InvalidInputError(
                 f"A prompt has a token id outside the model's vocabulary ({vocab})."
             )
+    limit = getattr(model.config, "max_position_embeddings", None)
+    if isinstance(limit, int) and limit > 0:
+        longest = max(len(p) for p in prompts)
+        if longest + wl.max_new_tokens > limit:
+            raise InvalidInputError(
+                f"The longest prompt ({longest} tokens) plus max_new_tokens ({wl.max_new_tokens}) "
+                f"exceeds the model's context length ({limit}). Shorten the prompt or lower "
+                "max_new_tokens."
+            )
     eos = _eos_ids(model)
     gen_pad_id = pad_id if tokenizer is not None else (min(eos) if eos else 0)
 

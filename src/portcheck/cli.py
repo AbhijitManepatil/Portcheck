@@ -18,7 +18,14 @@ app = typer.Typer(
 JSON_OPTION = typer.Option(False, "--json", help="Print the full result envelope as JSON.")
 
 
-def _table(headers: list[str], rows: list[list[Any]]) -> None:
+MAX_TABLE_ROWS = 50
+
+
+def _table(headers: list[str], rows: list[list[Any]], limit: int | None = None) -> None:
+    hidden = 0
+    if limit is not None and len(rows) > limit:
+        hidden = len(rows) - limit
+        rows = rows[:limit]
     cells = [[("" if v is None else str(v)) for v in row] for row in rows]
     widths = [
         max(len(h), *(len(r[i]) for r in cells)) if cells else len(h) for i, h in enumerate(headers)
@@ -27,6 +34,8 @@ def _table(headers: list[str], rows: list[list[Any]]) -> None:
     typer.echo("  ".join("-" * w for w in widths))
     for row in cells:
         typer.echo("  ".join(v.ljust(w) for v, w in zip(row, widths)).rstrip())
+    if hidden:
+        typer.echo(f"... and {hidden} more rows; use --json for the full list.")
 
 
 def _finish(envelope: dict[str, Any], as_json: bool, human: Any = None, fail_code: int = 0) -> None:
@@ -87,6 +96,7 @@ def scan(
                     [f["severity"], f["rule_id"], f["file"], f["line"], f["fix"], f["title"]]
                     for f in data["findings"]
                 ],
+                limit=MAX_TABLE_ROWS,
             )
 
     _finish(tools.scan_repo(path), as_json, human)
@@ -246,6 +256,22 @@ def report(
         typer.echo(f"sections: {', '.join(data['sections'])}")
 
     _finish(tools.build_report(scan_id, compare_id, list(cost_ids or []), fmt), as_json, human)
+
+
+@app.command()
+def runs(
+    kind: Optional[str] = typer.Option(  # noqa: UP045
+        None, "--kind", help="Only this kind: scan, plan, capture, compare, cost or report."
+    ),
+    as_json: bool = JSON_OPTION,
+) -> None:
+    """List earlier results under .portcheck/runs, oldest first."""
+
+    def human(data: dict[str, Any]) -> None:
+        if data["runs"]:
+            _table(["run id", "detail"], [[r["run_id"], r["detail"]] for r in data["runs"]])
+
+    _finish(tools.list_runs(kind), as_json, human)
 
 
 if __name__ == "__main__":  # pragma: no cover

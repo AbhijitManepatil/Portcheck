@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import difflib
 import hashlib
+import os
+import stat
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +32,25 @@ def _unified(old: str, new: str, rel_path: str) -> str:
         else:
             out.append(line + "\n\\ No newline at end of file\n")
     return "".join(out)
+
+
+def _write_atomic(path: Path, data: bytes) -> None:
+    """Replace ``path`` in one step, so an interrupted write never leaves half a file."""
+    mode = stat.S_IMODE(path.stat().st_mode)
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".portcheck-tmp", dir=path.parent
+    )
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(tmp_name, mode)
+        os.replace(tmp_name, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_name)
+        raise
 
 
 def diff_hash(diff: str) -> str:
@@ -73,7 +96,9 @@ def apply_step(
             old = raw.decode("utf-8")
         except UnicodeDecodeError as exc:
             raise InvalidInputError(f"File '{file}' is not valid UTF-8.") from exc
-        new = fix(old, path.name, config)
+        # Keep a leading byte-order mark out of the fix's way, then put it back.
+        bom = "\ufeff" if old.startswith("\ufeff") else ""
+        new = bom + fix(old[len(bom) :], path.name, config)
         if new != old:
             rel = rel_to_root(path, root)
             diffs.append(_unified(old, new, rel))
@@ -91,5 +116,5 @@ def apply_step(
             "review the new diff."
         )
     for path, _rel, data in edits:
-        path.write_bytes(data)
+        _write_atomic(path, data)
     return {"diff": diff, "diff_sha256": digest, "applied": bool(edits), "files": changed}

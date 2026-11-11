@@ -56,12 +56,17 @@ def normalise_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name.strip()).lower()
 
 
+_URL_SPEC_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://|^git\+|^[./\\]|^[A-Za-z]:[\\/]")
+
+
 def requirement_name(spec: str) -> str | None:
     """The normalised package name at the start of a requirement string, if any."""
     text = spec.strip()
-    if not text or text.startswith(("#", "-")) or "://" in text.split("#")[0].split(";")[0][:12]:
-        return None
-    if "::" in text:  # conda channel prefix, e.g. nvidia::cudatoolkit
+    if not text or text.startswith(("#", "-")):
+        return None  # blank, comment, or a pip option such as -r / --index-url
+    if _URL_SPEC_RE.match(text):
+        return None  # a bare URL, VCS reference or local path has no name to read
+    if "::" in text.split("#")[0]:  # conda channel prefix, e.g. nvidia::cudatoolkit
         text = text.split("::", 1)[1]
     match = _NAME_RE.match(text)
     return normalise_name(match.group(1)) if match else None
@@ -107,10 +112,17 @@ def _catches_import_error(handler: ast.ExceptHandler) -> bool:
 def _walk_imports(
     nodes: list[ast.stmt], top_level: bool, guarded: bool, out: list[ImportRef]
 ) -> None:
+    # Lines that hold more than one statement (`import a; b = 1`).
+    starts = [n.lineno for n in nodes]
+    shared = {n for n in starts if starts.count(n) > 1} if top_level else set()
     for node in nodes:
         if isinstance(node, ast.Import):
             plain = (
-                top_level and not guarded and len(node.names) == 1 and node.names[0].asname is None
+                top_level
+                and not guarded
+                and len(node.names) == 1
+                and node.names[0].asname is None
+                and node.lineno not in shared
             )
             for alias in node.names:
                 out.append(

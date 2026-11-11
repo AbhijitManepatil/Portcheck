@@ -126,3 +126,42 @@ def test_capture_command(root, tiny_workload):
 def test_version():
     result = run("--version")
     assert result.exit_code == 0 and result.stdout.strip() == "portcheck 0.1.0"
+
+
+def test_runs_lists_stored_results_oldest_first(captures, root):
+    run_json("cost", captures["ref"], "--price-per-hour", "2.5")
+    run_json("compare", captures["ref"], captures["cand"])
+    (root / ".portcheck" / "runs" / "not-a-run").mkdir()
+    (root / ".portcheck" / "runs" / "scan-20200101T000000Z-abcdef").mkdir()  # empty, damaged
+
+    listed = run_json("runs")["data"]["runs"]
+    assert [r["kind"] for r in listed].count("capture") == 4
+    assert {r["kind"] for r in listed} == {"scan", "capture", "cost", "compare"}
+    assert listed[0]["run_id"] == "scan-20200101T000000Z-abcdef"
+    assert listed[0]["detail"] == "unreadable result"
+    stamps = [r["run_id"].split("-", 1)[1][:16] for r in listed]
+    assert stamps == sorted(stamps)
+
+    only = run_json("runs", "--kind", "capture")["data"]["runs"]
+    assert len(only) == 4 and all(r["kind"] == "capture" for r in only)
+    details = " ".join(r["detail"] for r in only)
+    assert "label ref" in details and "FAULT INJECTED" in details
+
+    plain = run("runs", "--kind", "compare")
+    assert plain.exit_code == 0 and "verdict pass" in plain.stdout
+    assert run("runs", "--kind", "nonsense").exit_code == 1
+
+
+def test_runs_on_an_empty_root(root):
+    env = run_json("runs")
+    assert env["ok"] and env["data"]["runs"] == [] and env["run_id"] is None
+    assert not (root / ".portcheck").exists()  # listing creates nothing
+
+
+def test_long_finding_tables_are_capped(root):
+    (root / "many.py").write_text("".join(f"x{i} = 'nvidia-smi'\n" for i in range(80)))
+    plain = run("scan")
+    assert plain.exit_code == 0
+    assert plain.stdout.count("PC009") == 50
+    assert "... and 30 more rows; use --json for the full list." in plain.stdout
+    assert len(run_json("scan")["data"]["findings"]) == 80
