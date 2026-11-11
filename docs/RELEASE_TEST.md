@@ -27,13 +27,15 @@ published or the repository is made public.
      torch_index_url: "<the PyTorch ROCm wheel index URL for that ROCm version>"
    ```
 
-   Both ship empty on purpose. With them empty, the PC007 fix (and the PC008 fix when a
-   CUDA wheel URL is present) returns `config_missing`.
+   `rocm_image` ships with a default tag that was confirmed to exist on Docker Hub on
+   2026-11-11 but was never pulled or run; pull it, run it on the AMD machine and replace
+   it if it does not suit the GPU and driver. `torch_index_url` ships empty: with it
+   empty, the PC008 fix returns `config_missing` when a CUDA wheel URL is present.
 
 ## 3. Rent hardware
 
 Rent one NVIDIA and one AMD data-centre GPU. On each machine install the PyTorch build
-for that vendor first, then `pip install 'portcheck[run]'` (or install from this repo).
+for that vendor first, then install this repo with `pip install '.[run]'` from a checkout.
 
 ## 4. Run the release scenario
 
@@ -80,6 +82,8 @@ If the good case fails, inspect the metrics and recalibrate. The parity threshol
 
 ## 7. Publish
 
-Publish to GitHub and PyPI. Check that the name `portcheck` is available on PyPI first;
-this has not been checked. If the package is published under another name, update the
-install command in `README.md` and in `skills/gpu-port-audit/SKILL.md`.
+Publish to GitHub and PyPI. **The name `portcheck` is already taken on PyPI** by an
+unrelated project (checked 2026-11-11: versions 0.2.0 to 0.7.0 exist). Choose another
+distribution name, set it as `name` in `pyproject.toml`, and update the install command in
+`README.md` and in `skills/gpu-port-audit/SKILL.md`. The import name and the `portcheck`
+and `portcheck-mcp` commands can stay as they are.

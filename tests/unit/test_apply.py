@@ -119,7 +119,13 @@ def test_rescan_after_apply_drops_the_auto_findings(fixture_repo, test_config, p
     assert again["ok"] and again["data"]["diff"] == "" and again["data"]["applied"] is False
 
 
+def test_default_rocm_image_is_used_without_a_user_config(fixture_repo, plan_id):
+    env = tools.apply_step("S1", plan_id)
+    assert env["ok"] and f"+FROM {load_config().target.rocm_image}\n" in env["data"]["diff"]
+
+
 def test_empty_config_returns_config_missing(fixture_repo, plan_id):
+    (fixture_repo / "portcheck.yaml").write_text("target:\n  rocm_image: ''\n")
     before = _snapshot(fixture_repo)
     env = tools.apply_step("S1", plan_id)
     assert env["ok"] is False and env["error"]["code"] == "config_missing"

@@ -101,7 +101,9 @@ def test_envelope_shape_on_success_and_failure(fixture_repo):
 
 def test_config_defaults_and_override(root):
     cfg = load_config()
-    assert cfg.target.rocm_image == "" and cfg.target.torch_index_url == ""
+    assert (
+        cfg.target.rocm_image.startswith("rocm/pytorch:rocm") and cfg.target.torch_index_url == ""
+    )
     assert cfg.parity.noise_multiplier == 3.0
     assert cfg.parity.max_abs_diff_floor == {"float32": 0.001, "float16": 0.05, "bfloat16": 0.05}
     assert cfg.bench.warmup_batches == 2 and cfg.bench.measured_batches == 5

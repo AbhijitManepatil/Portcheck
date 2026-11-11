@@ -27,8 +27,10 @@ AMD GPUs. That release test is a human step: see [`docs/RELEASE_TEST.md`](docs/R
 Until it is done:
 
 - the parity thresholds are starting guesses, not calibrated values
-- `target.rocm_image` and `target.torch_index_url` are empty and must be set by you
-- the package is not on PyPI; install it from this repository
+- `target.torch_index_url` is empty and must be set by you; the default `target.rocm_image`
+  is a tag that exists on Docker Hub but has not been pulled or run
+- the package is not on PyPI; install it from this repository. **Do not run
+  `pip install portcheck`:** that name on PyPI belongs to a different, unrelated project
 
 ## Install
 
@@ -86,8 +88,8 @@ portcheck apply S1 <plan_run_id> --apply --diff-sha256 <hash>  # writes the chan
 
 `apply` never writes without the hash of the diff you reviewed. If the file changed since
 the dry run, it refuses. Only three fixes are automatic: the Docker base image (PC007),
-NVIDIA pip pins (PC008) and guarding `import pynvml` (PC009). The first two need the
-target values in `portcheck.yaml` (see Configuration).
+NVIDIA pip pins (PC008) and guarding `import pynvml` (PC009). PC007 uses `target.rocm_image`;
+PC008 needs `target.torch_index_url` only when a CUDA wheel URL is present (see Configuration).
 
 ### Validate
 
@@ -199,8 +201,9 @@ root directory:
 
 ```yaml
 target:
-  rocm_image: ""          # required by the PC007 fix; set a ROCm PyTorch image you have verified
-  torch_index_url: ""     # required by the PC008 fix when a CUDA wheel URL is present
+  # used by the PC007 fix; the default is a rocm/pytorch tag checked on Docker Hub (see defaults.yaml)
+  rocm_image: "rocm/pytorch:rocm10.1.0_ubuntu24.04_py3.12_pytorch_release_2.14.0"
+  torch_index_url: ""     # required by the PC008 fix when a CUDA wheel URL is present; empty by default
 parity:
   noise_multiplier: 3.0
   min_cosine: 0.999

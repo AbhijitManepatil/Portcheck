@@ -102,8 +102,8 @@ def _import_runtime() -> tuple[Any, Any]:
     except ImportError as exc:
         raise MissingDependencyError(
             f"capture needs torch and transformers ({exc.name or exc} is not installed). "
-            "Install them with: pip install 'portcheck[run]' (use the PyTorch build that "
-            "matches this machine's GPU)."
+            "Install the `run` extra from your checkout of this repo with: pip install '.[run]' "
+            "(install the PyTorch build that matches this machine's GPU first)."
         ) from exc
     return torch, transformers
 

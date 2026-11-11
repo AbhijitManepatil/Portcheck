@@ -110,7 +110,7 @@ def test_missing_dependency_names_the_run_extra(root, tiny_workload, monkeypatch
     monkeypatch.setitem(sys.modules, "transformers", None)
     env = tools.capture_run(tiny_workload, "x")
     assert env["ok"] is False and env["error"]["code"] == "missing_dependency"
-    assert "portcheck[run]" in env["error"]["message"]
+    assert "`run` extra" in env["error"]["message"] and ".[run]" in env["error"]["message"]
 
 
 def test_capture_input_errors(root, tiny_workload):
