@@ -41,6 +41,8 @@ Found by an independent review and by hostile-input tests; details in
   another statement; the scanner now marks those cases manual.
 - Fixed: decoding was not forced to greedy when a model's own generation config asked for
   beam search or penalties.
+- Added: a warning in `compare` and the report when the reference machine's own two
+  captures disagree on throughput by more than 5%.
 - Added: `portcheck runs`, atomic writes in `apply`, a context-length check before
   capture, virtualenv and out-of-root symlink skipping in scans, shell-quoted reproduce
   commands, and a CI workflow.

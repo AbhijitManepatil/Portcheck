@@ -178,6 +178,12 @@ or `tests/unit/test_review_findings.py`.
     MCP server still exposes exactly the 8 specified tools. Long finding tables in the
     CLI are capped at 50 rows; `--json` always has everything.
 
+46. **Repeatability warning.** When a repeat capture is given and its throughput differs
+    from the reference by more than 5% at any batch size (the release test's criterion),
+    the `compare` summary says so and the report's cost section carries a warning. The
+    report's warning is worded without figures, in keeping with item 29. The parity
+    verdict is not affected.
+
 ## Not done (by design)
 
 Nothing in spec section 13 was attempted. See `docs/RELEASE_TEST.md`.

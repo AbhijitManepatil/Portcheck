@@ -146,6 +146,9 @@ def compare_captures(
             summary += " No repeat capture was given, so the noise floor is zero."
         if faulty:
             summary += f" Fault injected in: {', '.join(faulty)}."
+        warning = _compare.repeatability_warning(result.reference, result.baseline_repeat)
+        if warning:
+            summary += f" Warning: {warning}"
         return ok_envelope(summary, data, run_id, result_path)
 
     return guarded(run)

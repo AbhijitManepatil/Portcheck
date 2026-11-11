@@ -8,6 +8,7 @@ description: Proves a model gives matching results on NVIDIA and AMD and compare
 1. Call `env_fingerprint` to learn which machine this is.
 2. Check which captures exist under `.portcheck/runs/`. A full check needs three: a
    reference and a repeat from the NVIDIA machine, and a candidate from the AMD machine.
+   With a shell, `portcheck runs --kind capture` lists them with label and machine.
 3. If this machine's capture is missing, call `capture_run` with the workload file.
 4. If a capture from the other machine is missing, tell the user the exact command to run
    there (`portcheck capture <workload.yaml> --label <name>`) and how to copy the capture

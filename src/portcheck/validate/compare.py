@@ -8,6 +8,7 @@ from portcheck.config import Config, load_config
 from portcheck.envelope import CaptureMismatchError, ConfigMissingError, InvalidInputError
 from portcheck.paths import get_root
 from portcheck.schemas import (
+    Capture,
     Check,
     CompareMetrics,
     CompareResult,
@@ -16,6 +17,9 @@ from portcheck.schemas import (
 )
 from portcheck.validate.capture import load_capture, load_tensors
 
+# The release test's repeatability criterion: a re-run on the same machine must be
+# within 5% of the first run's throughput (docs/RELEASE_TEST.md).
+REPEAT_LIMIT = 0.05
 _HUGE = 1e30  # stands in for "not finite" so results stay valid JSON
 
 
@@ -57,6 +61,45 @@ def greedy_stats(a: np.ndarray, b: np.ndarray) -> tuple[float, float]:
     # Length of the common prefix: index of the first mismatch, or the row width.
     first_mismatch = np.where(equal.all(axis=1), equal.shape[1], np.argmin(equal, axis=1))
     return exact, float(np.mean(first_mismatch))
+
+
+def unrepeatable_batches(first: Capture, second: Capture) -> list[tuple[int, float]]:
+    """Batch sizes where two captures from one machine disagree on throughput.
+
+    Returns ``(batch_size, relative difference)`` for each batch size whose tokens per
+    second differ by more than ``REPEAT_LIMIT``. Timings that noisy should not be used
+    for a cost comparison.
+    """
+    other = {row.batch_size: row.tokens_per_second for row in second.bench}
+    out = []
+    for row in first.bench:
+        if row.batch_size not in other:
+            continue
+        low, high = sorted((row.tokens_per_second, other[row.batch_size]))
+        if high > 0 and (high - low) / high > REPEAT_LIMIT:
+            out.append((row.batch_size, (high - low) / high))
+    return out
+
+
+def repeatability_warning(reference: str, baseline_repeat: str | None) -> str | None:
+    """A sentence about noisy timings on the reference machine, or None. Never raises."""
+    if not baseline_repeat:
+        return None
+    try:
+        _n, first, _d = load_capture(reference)
+        _n, second, _d = load_capture(baseline_repeat)
+    except Exception:  # noqa: BLE001 - a warning must never fail the comparison
+        return None
+    noisy = unrepeatable_batches(first, second)
+    if not noisy:
+        return None
+    parts = ", ".join(f"{diff:.0%} at batch size {batch}" for batch, diff in noisy)
+    return (
+        f"Throughput of the reference and its repeat differs by {parts}, more than the "
+        f"{REPEAT_LIMIT:.0%} repeatability limit. Timings on that machine are noisy: "
+        "capture again on an idle machine before trusting performance or cost numbers. "
+        "The parity verdict is not affected."
+    )
 
 
 def _check_same_workload(ref_name: str, ref, other_name: str, other, tensors_a, tensors_b) -> None:

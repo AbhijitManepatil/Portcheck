@@ -341,3 +341,29 @@ def test_malformed_capture_tensors_are_invalid_input(root, make_capture, base_lo
 def test_wrong_typed_arguments_are_invalid_input(root):
     for env in (tools.scan_repo(None), tools.scan_repo(3), tools.capture_run(None, "x")):
         assert env["ok"] is False and env["error"]["code"] == "invalid_input", env
+
+
+# ---- noisy timings on the reference machine are called out ----
+
+
+def test_unrepeatable_throughput_is_flagged_in_compare_and_report(root, make_capture, base_logits):
+    ref = make_capture("ref", base_logits, tokens_per_second=100.0)
+    steady = make_capture("steady", base_logits, tokens_per_second=96.0)  # 4% apart: fine
+    noisy = make_capture("noisy", base_logits, tokens_per_second=50.0)  # 50% apart
+    cand = make_capture("cand", base_logits, tokens_per_second=90.0)
+
+    quiet = tools.compare_captures(ref, cand, baseline_repeat=steady)
+    assert quiet["data"]["verdict"] == "pass" and "Warning" not in quiet["summary"]
+    assert "Warning" not in tools.compare_captures(ref, cand)["summary"]
+
+    loud = tools.compare_captures(ref, cand, baseline_repeat=noisy)
+    assert loud["data"]["verdict"] == "pass"  # parity is unaffected
+    assert "differs by 50% at batch size 1, 50% at batch size 4" in loud["summary"]
+    assert "5% repeatability limit" in loud["summary"]
+
+    costs = [tools.estimate_cost(ref, 2.5)["run_id"], tools.estimate_cost(cand, 1.9)["run_id"]]
+    flagged = tools.build_report(compare_id=loud["run_id"], cost_ids=costs)
+    clean = tools.build_report(compare_id=quiet["run_id"], cost_ids=costs)
+    marker = "**Warning: timings are not repeatable.**"
+    assert marker in (root / flagged["data"]["report_file"]).read_text()
+    assert marker not in (root / clean["data"]["report_file"]).read_text()

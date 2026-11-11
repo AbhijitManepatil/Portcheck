@@ -18,6 +18,7 @@ from portcheck.envelope import InvalidInputError, PortcheckError
 from portcheck.paths import load_result
 from portcheck.schemas import Capture, CompareResult, CostResult, Fingerprint, ScanResult
 from portcheck.validate.capture import load_capture
+from portcheck.validate.compare import unrepeatable_batches
 
 SECTION_TITLES = {
     "verdict": "Verdict",
@@ -269,6 +270,17 @@ def _markdown(
             "Cost per million tokens",
         ]
         out += _table(headers, rows) + [""]
+        if compare is not None and compare.baseline_repeat:
+            first, second = captures.get(compare.reference), captures.get(compare.baseline_repeat)
+            if first is not None and second is not None and unrepeatable_batches(first, second):
+                # Worded without figures: the report prints no number it computed itself.
+                out += [
+                    "**Warning: timings are not repeatable.** The reference machine's two "
+                    "captures disagree on throughput by more than the release test's "
+                    "repeatability limit. Capture again on an idle machine before trusting "
+                    "the performance and cost figures above. The parity verdict is not affected.",
+                    "",
+                ]
         peaks = [
             f"{_code(captures[c.capture].label)}: {num(captures[c.capture].peak_memory_bytes)} bytes"
             for c in costs
