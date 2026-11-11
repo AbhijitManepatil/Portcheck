@@ -1,0 +1,29 @@
+# Built-in defaults. Override any key in <root>/portcheck.yaml.
+target:
+  # rocm_image: the tag was confirmed to exist on Docker Hub on 2026-11-11.
+  # Source: https://hub.docker.com/r/rocm/pytorch/tags (the registry API listed it as
+  # the newest Ubuntu 24.04 tag, last updated 2026-10-05, same digest as `latest`,
+  # sha256:099f59a3bee9...). Only its existence was checked: it has not been pulled
+  # or run. Confirm it suits your GPU and driver, or override it in portcheck.yaml
+  # (docs/RELEASE_TEST.md, step 2).
+  rocm_image: "rocm/pytorch:rocm10.1.0_ubuntu24.04_py3.12_pytorch_release_2.14.0"
+  # torch_index_url: deliberately empty. The PyTorch ROCm wheel index is
+  # version-specific and could not be verified: pytorch.org and download.pytorch.org
+  # were not reachable from the build environment (spec section 3, rule 3). Until it
+  # is set in portcheck.yaml, a fix that needs it returns `config_missing`.
+  torch_index_url: ""
+parity:
+  # Initial defaults, calibrated by a human during the release test.
+  noise_multiplier: 3.0
+  min_cosine: 0.999
+  min_top1_agreement: 0.99
+  max_abs_diff_floor:
+    float32: 0.001
+    float16: 0.05
+    bfloat16: 0.05
+bench:
+  warmup_batches: 2
+  measured_batches: 5
+scan:
+  exclude: [".git", ".venv", "node_modules", ".portcheck", "__pycache__"]
+  max_file_bytes: 1000000

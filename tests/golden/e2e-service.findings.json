@@ -1,0 +1,8 @@
+[
+  {"rule_id": "PC001", "severity": "red", "file": "ext/fast_op.cu", "line": null, "fix": "manual"},
+  {"rule_id": "PC002", "severity": "red", "file": "trt_backend.py", "line": 3, "fix": "manual"},
+  {"rule_id": "PC007", "severity": "yellow", "file": "Dockerfile", "line": 1, "fix": "auto"},
+  {"rule_id": "PC009", "severity": "yellow", "file": "gpu_stats.py", "line": 3, "fix": "auto"},
+  {"rule_id": "PC008", "severity": "yellow", "file": "requirements.txt", "line": 3, "fix": "auto"},
+  {"rule_id": "PC010", "severity": "green", "file": "serve.py", "line": 29, "fix": "none"}
+]
