@@ -1,0 +1,165 @@
+# Rule catalog (spec section 8.2). Rules are data.
+#
+# Rule keys:    id, title, severity, fix, action, plan_title, matchers, max_per_file
+# Matcher kinds:
+#   file_glob    patterns: [glob]            file-level finding, no line
+#   import       modules: [dotted prefix]    Python imports
+#   dependency   patterns: [glob]            normalised package names; `exclude` globs
+#   docker_from  pattern: regex              image reference on a FROM line
+#   regex        pattern: regex, files: [glob], ignore_case
+# Matcher options:
+#   fix                  overrides the rule's fix for findings from this matcher
+#   ignore_guarded       import: skip imports inside `try` that catches ImportError
+#   auto_requires_plain  import: only a top-level `import x` keeps fix=auto
+#   auto_files           findings in files outside these globs become fix=manual
+# File globs: a pattern without `/` matches the file name at any depth.
+#   `@requirements` = requirements*.txt, `@dockerfile` = Dockerfile, Dockerfile.*, *.Dockerfile
+rules:
+  - id: PC001
+    title: Custom CUDA source
+    severity: red
+    fix: manual
+    action: >-
+      Port this CUDA source by hand. Evaluate HIPIFY (AMD's CUDA-to-HIP translator)
+      and SCALE (a toolchain that compiles CUDA for AMD GPUs) as starting points,
+      then rebuild and test on the AMD machine. portcheck does not translate kernels.
+    plan_title: "Port custom CUDA source in {file}"
+    matchers:
+      - kind: file_glob
+        patterns: ["**/*.cu", "**/*.cuh"]
+      - kind: regex
+        pattern: 'CUDAExtension|enable_language\(\s*CUDA|find_package\(\s*CUDA'
+        files: ["setup.py", "CMakeLists.txt", "*.cmake"]
+
+  - id: PC002
+    title: TensorRT
+    severity: red
+    fix: manual
+    action: >-
+      TensorRT runs only on NVIDIA GPUs. A person must replace this code path with
+      one that works on ROCm, for example plain PyTorch, ONNX Runtime with the
+      MIGraphX or ROCm provider, or MIGraphX directly, and re-validate the outputs.
+    plan_title: "Replace TensorRT use in {file}"
+    matchers:
+      - kind: import
+        modules: [tensorrt, torch_tensorrt, tensorrt_llm]
+      - kind: dependency
+        patterns: ["tensorrt*", "torch-tensorrt"]
+
+  - id: PC003
+    title: FlashAttention package
+    severity: red
+    fix: manual
+    action: >-
+      The flash-attn package ships CUDA-only kernels. A person must remove the
+      dependency and switch to PyTorch's built-in scaled_dot_product_attention,
+      or build and verify a ROCm-compatible fork, then re-validate the outputs.
+    plan_title: "Replace the flash-attn dependency in {file}"
+    matchers:
+      - kind: import
+        modules: [flash_attn]
+      - kind: dependency
+        patterns: ["flash-attn"]
+
+  - id: PC004
+    title: NVIDIA-only library
+    severity: red
+    fix: manual
+    action: >-
+      This library (DALI or RAPIDS) is NVIDIA-only. A person must replace it with
+      a portable alternative, for example torchvision or CPU data loading instead
+      of DALI, and pandas, scikit-learn or NetworkX instead of cuDF, cuML or cuGraph.
+    plan_title: "Replace the NVIDIA-only library used in {file}"
+    matchers:
+      - kind: import
+        modules: [nvidia.dali, cudf, cuml, cugraph]
+      - kind: dependency
+        patterns: ["nvidia-dali*", "cudf*", "cuml*", "cugraph*"]
+
+  - id: PC005
+    title: Multi-GPU or NCCL use
+    severity: yellow
+    fix: manual
+    action: >-
+      Multi-GPU and NCCL paths are outside what portcheck validates. A person must
+      check that the distributed backend works on ROCm and test it on the AMD machine.
+    plan_title: "Review multi-GPU or NCCL use in {file}"
+    matchers:
+      - kind: import
+        modules: [torch.distributed]
+      - kind: regex
+        pattern: 'DistributedDataParallel|\bnccl\b'
+        ignore_case: true
+        files: ["**/*.py", "**/*.sh"]
+
+  - id: PC006
+    title: Low-precision quantized path
+    severity: yellow
+    fix: manual
+    action: >-
+      FP8 and FP4 paths depend on hardware and library support that differs between
+      vendors. A person must confirm the target GPU and ROCm build support this
+      precision, or fall back to a supported dtype, and re-validate the outputs.
+    plan_title: "Review the low-precision path in {file}"
+    matchers:
+      - kind: regex
+        pattern: '\b(fp8|float8|fp4|nvfp4)\b'
+        ignore_case: true
+        files: ["**/*.py", "**/*.yaml", "**/*.yml", "**/*.json"]
+
+  - id: PC007
+    title: NVIDIA base image
+    severity: yellow
+    fix: auto
+    action: Swap the base image to a ROCm PyTorch image (target.rocm_image in portcheck.yaml).
+    plan_title: "Swap base image in {file}"
+    matchers:
+      - kind: docker_from
+        pattern: '^(nvidia/cuda|nvcr\.io/)'
+
+  - id: PC008
+    title: NVIDIA pip pins
+    severity: yellow
+    fix: auto
+    action: >-
+      Remove the NVIDIA-only pip packages and point any CUDA wheel index at the
+      PyTorch ROCm index (target.torch_index_url in portcheck.yaml).
+    plan_title: "Remove NVIDIA pip pins in {file}"
+    matchers:
+      - kind: dependency
+        patterns: ["nvidia-*"]
+        exclude: ["nvidia-dali*"]          # those belong to PC004
+        auto_files: ["@requirements"]
+      - kind: regex
+        pattern: 'download\.pytorch\.org/whl/cu\d+'
+        files: ["@requirements", "@dockerfile"]
+
+  - id: PC009
+    title: NVML or nvidia-smi call
+    severity: yellow
+    fix: manual
+    action: >-
+      NVML and nvidia-smi exist only on NVIDIA machines. Guard the import so the
+      code still loads elsewhere, and make each call site handle a missing NVML
+      (on AMD, rocm-smi or amd-smi report the same kind of data).
+    plan_title: "Guard NVML use in {file}"
+    matchers:
+      - kind: import
+        modules: [pynvml]
+        fix: auto
+        ignore_guarded: true
+        auto_requires_plain: true
+      - kind: regex
+        pattern: 'nvidia-smi'
+        files: ["**/*.py", "**/*.sh"]
+
+  - id: PC010
+    title: Plain torch.cuda usage
+    severity: green
+    fix: none
+    max_per_file: 1
+    action: No change needed. ROCm builds of PyTorch use the same torch.cuda API.
+    matchers:
+      - kind: regex
+        pattern: 'torch\.cuda\.|\.cuda\(\)|["'']cuda["'']'
+        files: ["**/*.py"]

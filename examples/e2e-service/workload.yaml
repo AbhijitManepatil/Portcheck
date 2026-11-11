@@ -1,0 +1,12 @@
+# Text-generation workload for the release test (docs/RELEASE_TEST.md).
+# The model and its pinned revision are chosen by a person before the release
+# test (step 2 of the runbook). Until both are set, `portcheck capture` on this
+# file returns `invalid_input`.
+model: SET-AN-OPEN-MODEL-HUB-ID
+revision: null
+task: text-generation
+dtype: float32
+prompts: prompts.jsonl
+max_new_tokens: 32
+batch_sizes: [1, 4]
+seed: 0

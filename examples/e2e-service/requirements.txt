@@ -1,0 +1,4 @@
+torch
+transformers
+nvidia-cudnn-cu12==9.1.0.70
+pynvml
