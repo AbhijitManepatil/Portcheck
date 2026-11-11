@@ -449,6 +449,7 @@ One command per function, same names with dashes: `portcheck fingerprint`, `scan
 
 ```python
 from mcp.server.fastmcp import FastMCP
+
 mcp = FastMCP("portcheck")
 ```
 
@@ -544,9 +545,11 @@ Tests must not download anything. Add a pytest fixture `tiny_model_dir` that bui
 
 ```python
 from transformers import GPT2Config, GPT2LMHeadModel
+
 torch.manual_seed(0)
-cfg = GPT2Config(vocab_size=128, n_positions=64, n_embd=32, n_layer=2, n_head=2,
-                 bos_token_id=0, eos_token_id=1)
+cfg = GPT2Config(
+    vocab_size=128, n_positions=64, n_embd=32, n_layer=2, n_head=2, bos_token_id=0, eos_token_id=1
+)
 GPT2LMHeadModel(cfg).save_pretrained(tmp_dir)
 ```
 
