@@ -16,20 +16,21 @@ spec was ambiguous and a reading had to be chosen (spec section 3, rule 7).
 3. **`transformers` argument name.** The spec says `torch_dtype=<dtype>`. transformers 5
    renamed it to `dtype` and warns on the old name, so `capture.py` passes `dtype` on
    transformers 5 or newer and `torch_dtype` on older versions.
-4. **Config defaults.** `target.rocm_image` defaults to
-   `rocm/pytorch:rocm10.1.0_ubuntu24.04_py3.12_pytorch_release_2.14.0`. The tag was
-   confirmed to exist on Docker Hub on 2026-11-11 (source and digest are in a comment in
-   `defaults.yaml`); it was not pulled or run. `target.torch_index_url` ships empty: the
-   PyTorch site and wheel host were not reachable from the build environment, so the
-   value could not be verified, and the fix that needs it returns `config_missing`.
-   Confirming both on real hardware remains a human step (section 13, step 2).
+4. **Config defaults.** Both were looked up on 2026-11-11 and are kept on ROCm 10.0;
+   the sources are in comments in `defaults.yaml`. `target.rocm_image` is
+   `rocm/pytorch:rocm10.0_ubuntu24.04_py3.12_pytorch_release_2.13.0` (Docker Hub).
+   `target.torch_index_url` is `https://download.pytorch.org/whl/rocm10.0`, the newest
+   stable ROCm index that holds torch wheels (the `rocm10.1` index had them only under
+   `nightly/`). Both were confirmed to exist; neither was pulled, installed or run on an
+   AMD GPU, which remains a human step (section 13, step 2).
 5. **Lint rule.** `ruff` ignores E501 (line length); `ruff format` handles wrapping.
 
-6. **Install hint in the audit skill.** The spec's skill text says `pip install portcheck`.
-   That name on PyPI belongs to an unrelated project (checked 2026-11-11), so following
-   the spec's text would install someone else's package. The skill and the README give
-   `pip install git+https://github.com/AbhijitManepatil/Portcheck.git` instead. The
-   distribution name is the owner's decision and was not changed in `pyproject.toml`.
+6. **Distribution name and install hint.** The spec's skill text says
+   `pip install portcheck`. That name on PyPI belongs to an unrelated project (checked
+   2026-11-11), so following it would install someone else's package. The owner chose the
+   distribution name `gpu-portcheck`; the import package and the commands are still
+   `portcheck`. Until the package is published, the skill and the README give
+   `pip install git+https://github.com/AbhijitManepatil/Portcheck.git`.
 
 ## Layout
 
@@ -100,9 +101,10 @@ spec was ambiguous and a reading had to be chosen (spec section 3, rule 7).
 23. **`workload_sha256`** is SHA-256 over the workload file bytes, one zero byte, then the
     prompts file bytes. A workload file that names the model by a machine-specific path
     therefore hashes differently on each machine; use a hub id or the same relative path.
-24. **Fixture workload.** `examples/e2e-service/workload.yaml` has a placeholder model and
-    `revision: null`, because choosing and pinning the model is a human step. A capture on
-    it returns `invalid_input` until a person fills it in.
+24. **Fixture workload.** The spec leaves the fixture's model to a person (section 13,
+    step 2). At the owner's request it is now pinned: `HuggingFaceTB/SmolLM2-135M`
+    (Apache-2.0) at commit `93efa2f097d58c2a74874c7e644dbc9b0cee75a2`. No test downloads
+    it; the `text` prompt path is tested offline with a tokenizer built locally.
 25. **Bench token count.** New tokens are counted per row up to and including the first
     end-of-sequence token, so padding after an early stop is not counted as output.
 26. **`capture_mismatch` also covers tensor shapes.** Captures whose tensors have different

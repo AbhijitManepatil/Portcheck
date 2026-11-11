@@ -98,6 +98,31 @@ def test_repeat_captures_are_identical_and_fault_injection_changes_outputs(root,
     assert np.abs(logits(a) - logits(bad)).max() > 0.1
 
 
+def test_text_prompts_use_the_tokenizer_and_left_padding(root, tiny_text_workload):
+    """The `text` prompt form, with a tokenizer built locally (no download)."""
+    import torch
+    from transformers import AutoTokenizer, GPT2LMHeadModel
+
+    env = tools.capture_run(tiny_text_workload, "text")
+    assert env["ok"], env
+    assert env["data"]["num_prompts"] == 4
+    assert [b["batch_size"] for b in env["data"]["bench"]] == [1, 3]
+    tensors = load_file(str(root / env["result_path"] / "capture.safetensors"))
+    assert tensors["last_logits"].shape == (4, 128) and tensors["generated_ids"].shape == (4, 6)
+
+    model_dir = root / "tiny-text-model"
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    model = GPT2LMHeadModel.from_pretrained(model_dir).eval()
+    texts = [json.loads(line)["text"] for line in (root / "text-prompts.jsonl").open()]
+    lengths = {len(tokenizer(t)["input_ids"]) for t in texts}
+    assert len(lengths) > 1  # unequal lengths, so the bench pass really pads
+    with torch.inference_mode():
+        for index, text in enumerate(texts):
+            ids = torch.tensor([tokenizer(text)["input_ids"]])
+            expected = model(ids).logits[0, -1].numpy()
+            np.testing.assert_allclose(tensors["last_logits"][index], expected, atol=1e-5)
+
+
 def test_non_float32_dtype_falls_back_on_cpu_with_a_warning(root, tiny_workload):
     path = root / tiny_workload
     path.write_text(path.read_text().replace("dtype: float32", "dtype: float16"))
@@ -179,9 +204,11 @@ def test_workload_hash_covers_workload_and_prompts(root, tiny_model_dir):
     assert load_workload(_write(root, body, '{"input_ids": [2, 4]}\n')).sha256 != first
 
 
-def test_fixture_workload_needs_a_person_to_choose_the_model(fixture_repo):
-    env = tools.capture_run("workload.yaml", "x")
-    assert env["ok"] is False and env["error"]["code"] == "invalid_input"
-    assert "revision" in env["error"]["message"]
+def test_fixture_workload_is_a_pinned_hub_model(fixture_repo, no_network):
+    loaded = load_workload("workload.yaml")  # loading must not touch the network
+    assert not loaded.model_is_local and loaded.prompt_form == "text"
+    assert loaded.workload.model == "HuggingFaceTB/SmolLM2-135M"
+    assert len(loaded.workload.revision) == 40 and int(loaded.workload.revision, 16) >= 0
+    assert loaded.workload.batch_sizes == [1, 4] and loaded.workload.max_new_tokens == 32
     prompts = [json.loads(line) for line in (fixture_repo / "prompts.jsonl").open()]
     assert len(prompts) == 20 and all(set(p) == {"text"} for p in prompts)

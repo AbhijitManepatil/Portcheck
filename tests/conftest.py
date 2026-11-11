@@ -117,6 +117,42 @@ def tiny_workload(root: Path, tiny_model_dir: Path) -> str:
 
 
 @pytest.fixture
+def tiny_text_workload(root: Path, tiny_model_dir: Path) -> str:
+    """A workload with `text` prompts and a word-level tokenizer built locally."""
+    from tokenizers import Tokenizer, models, pre_tokenizers
+    from transformers import PreTrainedTokenizerFast
+
+    texts = [
+        "the cat sat",
+        "a dog ran over the hill today",
+        "the model answers",
+        "one small step for a model and then a much longer walk",
+    ]
+    words = sorted({w for t in texts for w in t.split()})
+    vocab = {"<bos>": 0, "<eos>": 1, "<unk>": 2, **{w: i + 3 for i, w in enumerate(words)}}
+    assert len(vocab) <= 128  # the tiny model's vocabulary size
+    raw = Tokenizer(models.WordLevel(vocab=vocab, unk_token="<unk>"))
+    raw.pre_tokenizer = pre_tokenizers.Whitespace()
+    model_dir = root / "tiny-text-model"
+    shutil.copytree(tiny_model_dir, model_dir)
+    # No pad token on purpose: capture must fall back to the end-of-sequence token.
+    PreTrainedTokenizerFast(
+        tokenizer_object=raw, bos_token="<bos>", eos_token="<eos>", unk_token="<unk>"
+    ).save_pretrained(model_dir)
+    (root / "text-prompts.jsonl").write_text(
+        "".join(json.dumps({"text": t}) + "\n" for t in texts), encoding="utf-8"
+    )
+    (root / "text-workload.yaml").write_text(
+        "model: tiny-text-model\n"
+        "prompts: text-prompts.jsonl\n"
+        "max_new_tokens: 6\n"
+        "batch_sizes: [1, 3]\n",
+        encoding="utf-8",
+    )
+    return "text-workload.yaml"
+
+
+@pytest.fixture
 def make_capture(root: Path):
     """Write a synthetic capture (no torch needed) and return its run id."""
     from portcheck.paths import create_run_dir

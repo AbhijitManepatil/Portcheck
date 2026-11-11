@@ -12,25 +12,24 @@ The release test is what turns "the code works" into "the tool can be trusted".
 Confirm your employment IP and outside-work terms **in writing** before any code is
 published or the repository is made public.
 
-## 2. Choose the model and set verified config values
+## 2. Confirm the model and the config values
 
-1. Choose the open model for the fixture and pin its revision (a commit hash). Edit
-   `examples/e2e-service/workload.yaml`: set `model` to the hub id and `revision` to the
-   commit hash. Until you do, `capture` on that file returns `invalid_input`.
-2. Look up and verify the current values, then put them in `portcheck.yaml` in the
-   directory you run from (and, if you want them as shipped defaults, in
-   `src/portcheck/defaults.yaml` with a comment naming the source):
+1. The fixture workload (`examples/e2e-service/workload.yaml`) is pinned to the open model
+   `HuggingFaceTB/SmolLM2-135M` (Apache-2.0) at commit
+   `93efa2f097d58c2a74874c7e644dbc9b0cee75a2`. It has been captured and compared on CPU.
+   Keep it, or replace `model` and `revision` with the model you want to release against.
+2. The shipped defaults in `src/portcheck/defaults.yaml` are both on ROCm 10.0:
 
    ```yaml
    target:
-     rocm_image: "<a rocm/pytorch image tag you have pulled and run>"
-     torch_index_url: "<the PyTorch ROCm wheel index URL for that ROCm version>"
+     rocm_image: "rocm/pytorch:rocm10.0_ubuntu24.04_py3.12_pytorch_release_2.13.0"
+     torch_index_url: "https://download.pytorch.org/whl/rocm10.0"
    ```
 
-   `rocm_image` ships with a default tag that was confirmed to exist on Docker Hub on
-   2026-11-11 but was never pulled or run; pull it, run it on the AMD machine and replace
-   it if it does not suit the GPU and driver. `torch_index_url` ships empty: with it
-   empty, the PC008 fix returns `config_missing` when a CUDA wheel URL is present.
+   Both were confirmed to exist on 2026-11-11 (sources are in comments in that file).
+   Neither was pulled, installed or run on an AMD GPU. Pull the image and install from
+   the index on the AMD machine; if they do not suit its GPU and driver, or a newer
+   release is out, override them in `portcheck.yaml` in the directory you run from.
 
 ## 3. Rent hardware
 
@@ -82,8 +81,9 @@ If the good case fails, inspect the metrics and recalibrate. The parity threshol
 
 ## 7. Publish
 
-Publish to GitHub and PyPI. **The name `portcheck` is already taken on PyPI** by an
-unrelated project (checked 2026-11-11: versions 0.2.0 to 0.7.0 exist). Choose another
-distribution name, set it as `name` in `pyproject.toml`, and update the install command in
-`README.md` and in `skills/gpu-port-audit/SKILL.md`. The import name and the `portcheck`
-and `portcheck-mcp` commands can stay as they are.
+Publish to GitHub and PyPI. The name `portcheck` on PyPI belongs to an unrelated project,
+so the distribution is named `gpu-portcheck` in `pyproject.toml` (free on PyPI when checked
+on 2026-11-11; check again before uploading). The import name and the `portcheck` and
+`portcheck-mcp` commands are unchanged. After the first upload, change the install commands
+in `README.md` and `skills/gpu-port-audit/SKILL.md` from the GitHub URL to
+`pip install gpu-portcheck`.

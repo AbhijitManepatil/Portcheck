@@ -14,9 +14,9 @@ A small text-generation service with NVIDIA-only problems **planted on purpose**
 | `ext/fast_op.cu` | Custom CUDA kernel | PC001, red, manual |
 | `serve.py` | Plain `torch.cuda` usage | PC010, green, no change needed |
 
-`workload.yaml` and `prompts.jsonl` describe the validation workload (20 short
-prompts). The model and its revision are left for a person to choose before the
-release test.
+`workload.yaml` and `prompts.jsonl` describe the validation workload: 20 short
+prompts on SmolLM2-135M (Apache-2.0), pinned to a commit. A capture downloads the
+model from the Hugging Face Hub (about 270 MB) the first time.
 
 Try it from the repo root:
 

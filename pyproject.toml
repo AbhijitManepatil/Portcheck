@@ -3,7 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "portcheck"
+# The PyPI name "portcheck" belongs to an unrelated project, so the distribution is
+# "gpu-portcheck". The import package and the commands are still `portcheck`.
+name = "gpu-portcheck"
 version = "0.1.0"
 description = "Checks whether a CUDA-based AI inference workload can move from NVIDIA to AMD ROCm, and proves it with measurements."
 readme = "README.md"

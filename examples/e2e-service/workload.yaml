@@ -1,9 +1,10 @@
-# Text-generation workload for the release test (docs/RELEASE_TEST.md).
-# The model and its pinned revision are chosen by a person before the release
-# test (step 2 of the runbook). Until both are set, `portcheck capture` on this
-# file returns `invalid_input`.
-model: SET-AN-OPEN-MODEL-HUB-ID
-revision: null
+# Text-generation workload for the fixture and the release test (docs/RELEASE_TEST.md).
+# Model: SmolLM2-135M, an open model under the Apache-2.0 licence, pinned to a commit.
+# Source: https://huggingface.co/HuggingFaceTB/SmolLM2-135M (commit checked 2026-11-11).
+# It is small on purpose so the fixture runs anywhere; swap in the model you care
+# about for a real migration decision.
+model: HuggingFaceTB/SmolLM2-135M
+revision: 93efa2f097d58c2a74874c7e644dbc9b0cee75a2
 task: text-generation
 dtype: float32
 prompts: prompts.jsonl

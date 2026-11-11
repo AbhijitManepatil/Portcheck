@@ -27,10 +27,14 @@ AMD GPUs. That release test is a human step: see [`docs/RELEASE_TEST.md`](docs/R
 Until it is done:
 
 - the parity thresholds are starting guesses, not calibrated values
-- `target.torch_index_url` is empty and must be set by you; the default `target.rocm_image`
-  is a tag that exists on Docker Hub but has not been pulled or run
-- the package is not on PyPI; install it from this repository. **Do not run
-  `pip install portcheck`:** that name on PyPI belongs to a different, unrelated project
+- the default `target.rocm_image` and `target.torch_index_url` (both ROCm 10.0) were
+  confirmed to exist, but have not been pulled, installed or run on an AMD GPU
+- the package is not on PyPI yet; install it from this repository. Its distribution name
+  is `gpu-portcheck`. **Do not run `pip install portcheck`:** that name on PyPI belongs to
+  a different, unrelated project
+
+The validation flow has also been run on CPU with a real model, the fixture's pinned
+SmolLM2-135M: three captures compared as `pass`, and a fault-injected capture as `fail`.
 
 ## Install
 
@@ -89,7 +93,8 @@ portcheck apply S1 <plan_run_id> --apply --diff-sha256 <hash>  # writes the chan
 `apply` never writes without the hash of the diff you reviewed. If the file changed since
 the dry run, it refuses. Only three fixes are automatic: the Docker base image (PC007),
 NVIDIA pip pins (PC008) and guarding `import pynvml` (PC009). PC007 uses `target.rocm_image`;
-PC008 needs `target.torch_index_url` only when a CUDA wheel URL is present (see Configuration).
+PC008 uses `target.torch_index_url` when a CUDA wheel URL is present (see Configuration). If
+either value is set to empty, the fix that needs it returns `config_missing`.
 
 ### Validate
 
@@ -201,9 +206,9 @@ root directory:
 
 ```yaml
 target:
-  # used by the PC007 fix; the default is a rocm/pytorch tag checked on Docker Hub (see defaults.yaml)
-  rocm_image: "rocm/pytorch:rocm10.1.0_ubuntu24.04_py3.12_pytorch_release_2.14.0"
-  torch_index_url: ""     # required by the PC008 fix when a CUDA wheel URL is present; empty by default
+  # Both defaults are on ROCm 10.0; sources and check dates are in defaults.yaml.
+  rocm_image: "rocm/pytorch:rocm10.0_ubuntu24.04_py3.12_pytorch_release_2.13.0"  # used by the PC007 fix
+  torch_index_url: "https://download.pytorch.org/whl/rocm10.0"  # replaces CUDA wheel URLs (PC008)
 parity:
   noise_multiplier: 3.0
   min_cosine: 0.999

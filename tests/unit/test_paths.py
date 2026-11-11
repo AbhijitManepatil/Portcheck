@@ -101,9 +101,11 @@ def test_envelope_shape_on_success_and_failure(fixture_repo):
 
 def test_config_defaults_and_override(root):
     cfg = load_config()
-    assert (
-        cfg.target.rocm_image.startswith("rocm/pytorch:rocm") and cfg.target.torch_index_url == ""
-    )
+    assert cfg.target.rocm_image.startswith("rocm/pytorch:rocm")
+    assert cfg.target.torch_index_url.startswith("https://download.pytorch.org/whl/rocm")
+    # The two defaults are kept on the same ROCm release.
+    release = cfg.target.torch_index_url.rsplit("/", 1)[-1]
+    assert cfg.target.rocm_image.split(":", 1)[1].startswith(release + "_")
     assert cfg.parity.noise_multiplier == 3.0
     assert cfg.parity.max_abs_diff_floor == {"float32": 0.001, "float16": 0.05, "bfloat16": 0.05}
     assert cfg.bench.warmup_batches == 2 and cfg.bench.measured_batches == 5
@@ -112,7 +114,7 @@ def test_config_defaults_and_override(root):
         "target:\n  rocm_image: img:1\nparity:\n  max_abs_diff_floor:\n    float32: 0.5\n"
     )
     cfg = load_config()
-    assert cfg.target.rocm_image == "img:1" and cfg.target.torch_index_url == ""
+    assert cfg.target.rocm_image == "img:1" and cfg.target.torch_index_url.startswith("https://")
     assert cfg.parity.max_abs_diff_floor["float32"] == 0.5
     assert cfg.parity.max_abs_diff_floor["float16"] == 0.05  # deep merge keeps other keys
 
