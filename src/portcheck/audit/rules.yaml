@@ -12,6 +12,7 @@
 #   ignore_guarded       import: skip imports inside `try` that catches ImportError
 #   auto_requires_plain  import: only a top-level `import x` keeps fix=auto
 #   auto_files           findings in files outside these globs become fix=manual
+#   auto_pattern         regex: lines that do not match it become fix=manual
 # File globs: a pattern without `/` matches the file name at any depth.
 #   `@requirements` = requirements*.txt, `@dockerfile` = Dockerfile, Dockerfile.*, *.Dockerfile
 rules:
@@ -115,7 +116,8 @@ rules:
     plan_title: "Swap base image in {file}"
     matchers:
       - kind: docker_from
-        pattern: '^(nvidia/cuda|nvcr\.io/)'
+        # The spec's pattern, plus an optional explicit Docker Hub registry prefix.
+        pattern: '^((index\.)?docker\.io/)?(nvidia/cuda|nvcr\.io/)'
 
   - id: PC008
     title: NVIDIA pip pins
@@ -133,6 +135,9 @@ rules:
       - kind: regex
         pattern: 'download\.pytorch\.org/whl/cu\d+'
         files: ["@requirements", "@dockerfile"]
+        # Only a bare index URL is rewritten automatically. A URL that goes on to a
+        # file (a wheel, torch_stable.html) needs a person.
+        auto_pattern: 'download\.pytorch\.org/whl/cu\d+/?(?=[\s"''\\)]|$)'
 
   - id: PC009
     title: NVML or nvidia-smi call

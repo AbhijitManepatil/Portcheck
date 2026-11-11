@@ -33,8 +33,12 @@ Until it is done:
   is `gpu-portcheck`. **Do not run `pip install portcheck`:** that name on PyPI belongs to
   a different, unrelated project
 
-The validation flow has also been run on CPU with a real model, the fixture's pinned
-SmolLM2-135M: three captures compared as `pass`, and a fault-injected capture as `fail`.
+The whole flow has also been run on CPU with a real model, the fixture's pinned
+SmolLM2-135M: audit, migrate, the migrated service answering a request, three captures
+compared as `pass`, a fault-injected capture as `fail`, cost and report. The report from
+that run is in [`docs/examples/sample-report-cpu.md`](docs/examples/sample-report-cpu.md).
+It shows what a report looks like; its numbers come from one CPU, so it says nothing about
+NVIDIA versus AMD.
 
 ## Install
 
@@ -54,7 +58,9 @@ PyTorch and transformers. Install the PyTorch build for your GPU first (CUDA or 
 pip install '.[run]'
 ```
 
-For development: `pip install -e '.[dev]'`, then `ruff check .` and `pytest -q`.
+For development: `pip install -e '.[dev]'`, then `ruff check .` and `pytest -q`. The test
+suite needs no network and no GPU. CI (`.github/workflows/ci.yml`) runs it on Python 3.10
+to 3.13 and checks that the built wheel works without torch.
 
 ## Quick start
 
@@ -156,6 +162,7 @@ batch size, and the commands to reproduce it.
 | `portcheck compare REF CAND` | `compare_captures` | Parity verdict |
 | `portcheck cost CAPTURE --price-per-hour P` | `estimate_cost` | Cost per million tokens |
 | `portcheck report` | `build_report` | One report from earlier results |
+| `portcheck runs [--kind K]` | (CLI only) | List earlier results under `.portcheck/runs` |
 
 Exit codes: 0 on success, 1 on any error, 2 from `compare` when the verdict is `fail`.
 
@@ -252,6 +259,7 @@ Rules are data: see `src/portcheck/audit/rules.yaml`.
 - [`IMPLEMENTATION_SPEC.md`](IMPLEMENTATION_SPEC.md): the build spec.
 - [`docs/SPEC_DEVIATIONS.md`](docs/SPEC_DEVIATIONS.md): where the implementation differs from the spec, and why.
 - [`docs/RELEASE_TEST.md`](docs/RELEASE_TEST.md): the human runbook for the two-GPU release test.
+- [`CHANGELOG.md`](CHANGELOG.md): what changed.
 - [`HANDOFF.md`](HANDOFF.md): project context and open points for the owner.
 
 ## Licence

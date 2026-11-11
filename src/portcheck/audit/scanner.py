@@ -34,6 +34,7 @@ class Matcher:
     ignore_guarded: bool = False
     auto_requires_plain: bool = False
     auto_files: tuple[str, ...] = ()
+    auto_regex: re.Pattern[str] | None = None
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,7 @@ def _build_matcher(rule_id: str, raw: dict[str, Any]) -> Matcher:
         ignore_guarded=bool(raw.get("ignore_guarded", False)),
         auto_requires_plain=bool(raw.get("auto_requires_plain", False)),
         auto_files=tuple(raw.get("auto_files") or ()),
+        auto_regex=re.compile(raw["auto_pattern"]) if raw.get("auto_pattern") else None,
     )
 
 
@@ -158,7 +160,7 @@ class _FileView:
     @property
     def lines(self) -> list[str]:
         if self._lines is None:
-            self._lines = (self.text or "").splitlines()
+            self._lines = parsers.split_lines(self.text or "")
         return self._lines
 
     def line_text(self, line: int | None) -> str:
@@ -219,8 +221,10 @@ def _match(rule: Rule, matcher: Matcher, view: _FileView) -> list[tuple[int | No
             if not any(module_matches(c, p) for c in imp.candidates for p in matcher.patterns):
                 continue
             fix = base_fix
-            if fix == "auto" and matcher.auto_requires_plain and not imp.plain:
-                fix = "manual"
+            if fix == "auto" and matcher.auto_requires_plain:
+                # Only `import <exactly the listed module>` alone on its line is fixable.
+                if not imp.plain or imp.module not in matcher.patterns:
+                    fix = "manual"
             hits.append((imp.line, view.line_text(imp.line) or imp.module, fix))
     elif matcher.kind == "dependency":
         for dep in view.deps:
@@ -232,14 +236,19 @@ def _match(rule: Rule, matcher: Matcher, view: _FileView) -> list[tuple[int | No
     elif matcher.kind == "docker_from":
         assert matcher.regex is not None
         for frm in view.froms:
-            if matcher.regex.search(frm.image):
-                hits.append((frm.line, frm.raw, base_fix))
+            if matcher.regex.search(frm.resolved or frm.image):
+                # An image that comes from a build argument cannot be swapped safely.
+                fix = "manual" if frm.uses_arg and base_fix == "auto" else base_fix
+                hits.append((frm.line, frm.raw, fix))
     elif matcher.kind == "regex":
         assert matcher.regex is not None
         if _any_glob(view.rel_path, matcher.files):
             for number, line in enumerate(view.lines, start=1):
                 if matcher.regex.search(line):
-                    hits.append((number, line, base_fix))
+                    fix = base_fix
+                    if fix == "auto" and matcher.auto_regex and not matcher.auto_regex.search(line):
+                        fix = "manual"
+                    hits.append((number, line, fix))
     return hits
 
 
@@ -329,9 +338,12 @@ def scan_repo(path: str = ".", config: Config | None = None) -> ScanResult:
                     continue
             files_scanned += 1
             rel_path = full.relative_to(target).as_posix()
-            findings.extend(
-                scan_file(rel_path, _read_text(full, config.scan.max_file_bytes), rules)
-            )
+            text = _read_text(full, config.scan.max_file_bytes)
+            try:
+                findings.extend(scan_file(rel_path, text, rules))
+            except (RecursionError, MemoryError):
+                # One pathological file must not abort the scan: keep its filename rules.
+                findings.extend(scan_file(rel_path, None, rules))
 
     findings = sort_findings(findings)
     counts = {"red": 0, "yellow": 0, "green": 0}

@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from portcheck.audit.parsers import split_lines
 from portcheck.config import load_config
 from portcheck.envelope import DiffMismatchError, InvalidInputError, NotFoundError
 from portcheck.migrate.fixes import FIXES
@@ -20,14 +21,14 @@ from portcheck.paths import get_root, rel_to_root, resolve_in_root
 
 def _unified(old: str, new: str, rel_path: str) -> str:
     lines = difflib.unified_diff(
-        old.splitlines(keepends=True),
-        new.splitlines(keepends=True),
+        split_lines(old, keepends=True),
+        split_lines(new, keepends=True),
         fromfile=f"a/{rel_path}",
         tofile=f"b/{rel_path}",
     )
     out = []
     for line in lines:
-        if line.endswith("\n"):
+        if line.endswith(("\n", "\r")):
             out.append(line)
         else:
             out.append(line + "\n\\ No newline at end of file\n")

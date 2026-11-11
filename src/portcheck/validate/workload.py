@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
+from portcheck.audit.parsers import split_lines
 from portcheck.envelope import InvalidInputError, NotFoundError
 from portcheck.paths import get_root, resolve_in_root
 from portcheck.schemas import Workload
@@ -39,7 +40,7 @@ def _parse_prompts(raw: bytes, name: str) -> tuple[str, list[str], list[list[int
     form: str | None = None
     texts: list[str] = []
     ids: list[list[int]] = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    for number, line in enumerate(split_lines(text), start=1):
         if not line.strip():
             continue
         try:

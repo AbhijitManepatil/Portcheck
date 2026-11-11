@@ -20,6 +20,24 @@ _FALLBACK_IMPORT_RE = re.compile(r"^(\s*)(import|from)\s+([\w.]+)")
 _NAME_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
 _FROM_RE = re.compile(r"^\s*FROM\s+((?:--\S+\s+)*)(\S+)(.*)$", re.IGNORECASE)
 _GUARD_EXCEPTIONS = {"ImportError", "ModuleNotFoundError", "Exception", "BaseException"}
+_NEWLINE_RE = re.compile(r"(\r\n|\n|\r)")
+_HEREDOC_RE = re.compile(r"<<-?\s*([\"']?)([A-Za-z_][A-Za-z0-9_]*)\1")
+_ARG_RE = re.compile(r"^\s*ARG\s+([A-Za-z_][A-Za-z0-9_]*)=(\S+)", re.IGNORECASE)
+_VAR_RE = re.compile(r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)(?::?[-+][^}]*)?\}|([A-Za-z_][A-Za-z0-9_]*))")
+
+
+def split_lines(text: str, keepends: bool = False) -> list[str]:
+    """Split on ``\\n``, ``\\r\\n`` and ``\\r`` only.
+
+    ``str.splitlines`` also splits on form feeds and other separators that Python's
+    parser, pip and Docker do not treat as line ends, which shifts every line number
+    after one. All line handling in portcheck goes through this function instead.
+    """
+    parts = _NEWLINE_RE.split(text)
+    lines = [parts[i] + (parts[i + 1] if keepends else "") for i in range(0, len(parts) - 1, 2)]
+    if parts[-1] != "":
+        lines.append(parts[-1])
+    return lines
 
 
 @dataclass(frozen=True)
@@ -45,8 +63,10 @@ class Dependency:
 @dataclass(frozen=True)
 class DockerFrom:
     line: int
-    image: str
+    image: str  # as written on the FROM line
     raw: str
+    resolved: str = ""  # image with ARG defaults substituted
+    uses_arg: bool = False  # the image reference contains a build argument
 
 
 # ----------------------------------------------------------------------------- names
@@ -112,9 +132,15 @@ def _catches_import_error(handler: ast.ExceptHandler) -> bool:
 def _walk_imports(
     nodes: list[ast.stmt], top_level: bool, guarded: bool, out: list[ImportRef]
 ) -> None:
-    # Lines that hold more than one statement (`import a; b = 1`).
-    starts = [n.lineno for n in nodes]
-    shared = {n for n in starts if starts.count(n) > 1} if top_level else set()
+    # Lines touched by more than one statement (`import a; b = 1`, also when the
+    # other statement only ends on that line).
+    shared: set[int] = set()
+    if top_level:
+        seen: set[int] = set()
+        for stmt in nodes:
+            span = set(range(stmt.lineno, (stmt.end_lineno or stmt.lineno) + 1))
+            shared |= span & seen
+            seen |= span
     for node in nodes:
         if isinstance(node, ast.Import):
             plain = (
@@ -122,7 +148,8 @@ def _walk_imports(
                 and not guarded
                 and len(node.names) == 1
                 and node.names[0].asname is None
-                and node.lineno not in shared
+                and node.col_offset == 0
+                and not shared & set(range(node.lineno, (node.end_lineno or node.lineno) + 1))
             )
             for alias in node.names:
                 out.append(
@@ -168,7 +195,7 @@ def _walk_imports(
 
 def _fallback_imports(text: str) -> list[ImportRef]:
     out: list[ImportRef] = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    for number, line in enumerate(split_lines(text), start=1):
         match = _FALLBACK_IMPORT_RE.match(line)
         if not match or match.group(3).startswith("."):
             continue
@@ -195,21 +222,27 @@ def parse_python_imports(text: str) -> list[ImportRef]:
     """Imported modules with line numbers. Falls back to a line regex on a syntax error."""
     try:
         tree = ast.parse(text)
-    except (SyntaxError, ValueError, RecursionError):
+        out: list[ImportRef] = []
+        _walk_imports(tree.body, True, False, out)
+        return out
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        # Not parseable, or too deeply nested to walk: use the line regex instead.
         return _fallback_imports(text)
-    out: list[ImportRef] = []
-    _walk_imports(tree.body, True, False, out)
-    return out
 
 
 # ----------------------------------------------------------------------- dependencies
 
 
+def continues_requirement(line: str) -> bool:
+    """True if the next line continues this one. A comment line never does (as in pip)."""
+    return line.rstrip().endswith("\\") and not line.lstrip().startswith("#")
+
+
 def parse_requirements(text: str) -> list[Dependency]:
     out: list[Dependency] = []
     continuation = False
-    for number, line in enumerate(text.splitlines(), start=1):
-        is_continuation, continuation = continuation, line.rstrip().endswith("\\")
+    for number, line in enumerate(split_lines(text), start=1):
+        is_continuation, continuation = continuation, continues_requirement(line)
         if is_continuation:
             continue
         name = requirement_name(line)
@@ -230,7 +263,7 @@ def _find_line(lines: list[str], needle: str, used: set[tuple[int, str]]) -> int
 def parse_pyproject(text: str) -> list[Dependency]:
     try:
         data = tomllib.loads(text)
-    except (tomllib.TOMLDecodeError, ValueError):
+    except (tomllib.TOMLDecodeError, ValueError, RecursionError):
         return []
     project = data.get("project")
     if not isinstance(project, dict):
@@ -244,7 +277,7 @@ def parse_pyproject(text: str) -> list[Dependency]:
         for group in optional.values():
             if isinstance(group, list):
                 specs.extend(group)
-    lines = text.splitlines()
+    lines = split_lines(text)
     used: set[tuple[int, str]] = set()
     out: list[Dependency] = []
     for spec in specs:
@@ -259,7 +292,7 @@ def parse_pyproject(text: str) -> list[Dependency]:
 def parse_environment_yml(text: str) -> list[Dependency]:
     try:
         data = yaml.safe_load(text)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError, ValueError):
         return []
     if not isinstance(data, dict) or not isinstance(data.get("dependencies"), list):
         return []
@@ -269,7 +302,7 @@ def parse_environment_yml(text: str) -> list[Dependency]:
             specs.append(item)
         elif isinstance(item, dict) and isinstance(item.get("pip"), list):
             specs.extend(s for s in item["pip"] if isinstance(s, str))
-    lines = text.splitlines()
+    lines = split_lines(text)
     used: set[tuple[int, str]] = set()
     out: list[Dependency] = []
     for spec in specs:
@@ -293,12 +326,50 @@ def parse_dependencies(filename: str, text: str) -> list[Dependency]:
 # ------------------------------------------------------------------------- Dockerfile
 
 
+def _substitute_args(image: str, args: dict[str, str]) -> str:
+    def repl(match: re.Match[str]) -> str:
+        name = match.group(1) or match.group(2)
+        return args.get(name, match.group(0))
+
+    return _VAR_RE.sub(repl, image)
+
+
 def parse_dockerfile(text: str) -> list[DockerFrom]:
+    """FROM instructions, skipping heredoc bodies, continuation lines and comments."""
     out: list[DockerFrom] = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    args: dict[str, str] = {}
+    heredoc_end: str | None = None
+    continuation = False
+    for number, line in enumerate(split_lines(text), start=1):
+        stripped = line.strip()
+        if heredoc_end is not None:
+            if stripped == heredoc_end:
+                heredoc_end = None
+            continue
+        if stripped.startswith("#"):
+            continue  # comments do not end a continued instruction
+        is_continuation, continuation = continuation, stripped.endswith(("\\", "`"))
+        heredoc = _HEREDOC_RE.search(line)
+        if heredoc:
+            heredoc_end = heredoc.group(2)
+        if is_continuation:
+            continue
+        arg = _ARG_RE.match(line)
+        if arg:
+            args[arg.group(1)] = arg.group(2).strip("\"'")
+            continue
         match = _FROM_RE.match(line)
         if match:
-            out.append(DockerFrom(line=number, image=match.group(2), raw=line.strip()))
+            image = match.group(2)
+            out.append(
+                DockerFrom(
+                    line=number,
+                    image=image,
+                    raw=stripped,
+                    resolved=_substitute_args(image, args),
+                    uses_arg="$" in image,
+                )
+            )
     return out
 
 

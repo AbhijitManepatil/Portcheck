@@ -131,6 +131,53 @@ spec was ambiguous and a reading had to be chosen (spec section 3, rule 7).
 32. **Cost roles.** With two cost results, the reference and candidate are taken from the
     compare result when it names the same captures, otherwise from the order of `cost_ids`.
 
+## Hardening after an independent review
+
+These go beyond the spec. Each has a regression test in `tests/unit/test_hardening.py`
+or `tests/unit/test_review_findings.py`.
+
+33. **Line breaks.** Only `\n`, `\r\n` and `\r` count as line ends, as in Python's own
+    parser. `str.splitlines` also splits on form feeds and similar characters, which
+    shifted line numbers and once made a fix edit the wrong line.
+34. **Byte-order mark.** Files are decoded as `utf-8-sig`, so a BOM no longer hides a
+    finding on line 1. `apply_step` keeps the BOM in the file it writes.
+35. **Scan boundaries.** A directory that contains `pyvenv.cfg` (a virtualenv, whatever its
+    name) is skipped, in addition to `scan.exclude`. A symlink that resolves outside the
+    root is never read. A file too deeply nested to parse falls back to the line regex
+    instead of aborting the scan.
+36. **Results folder.** If `.portcheck`, `.portcheck/runs` or a run folder is a symlink that
+    leaves the root, every tool returns `path_outside_root` and writes nothing.
+37. **PC007 (Dockerfiles).** `FROM` text inside a heredoc body or a continued instruction
+    is ignored. An optional `docker.io/` prefix is accepted (the spec's pattern is
+    anchored at `nvidia/cuda` or `nvcr.io/`). An image that comes from an `ARG` default,
+    such as `FROM ${BASE}`, is reported but is `manual`, because the argument can be
+    overridden at build time.
+38. **PC008 (URLs).** Only a bare index URL (`.../whl/cu121`, with or without a trailing
+    slash) is rewritten. A URL that goes on to a file, such as `torch_stable.html` or a
+    wheel, is reported as `manual` and left alone; rewriting it produced dead links. A
+    comment line ending in a backslash no longer swallows the next requirement.
+39. **PC009 (import guard).** The import must be `import pynvml` exactly, alone on its
+    line: `import pynvml.smi`, or an import sharing a line with another statement, is
+    `manual`. A trailing comment such as `# noqa` is kept on the guarded import. The
+    scanner and the fix are tested to agree on what is auto-fixable.
+40. **Atomic apply.** `apply_step` writes through a temporary file and a rename, and keeps
+    the file's permission bits.
+41. **Greedy decoding is forced.** `capture_run` passes `num_beams=1`,
+    `repetition_penalty=1.0` and `no_repeat_ngram_size=0` with `do_sample=False`, so a
+    model whose own generation config asks for beam search is still decoded greedily, as
+    the spec requires.
+42. **Context length.** A workload whose longest prompt plus `max_new_tokens` exceeds the
+    model's context length is rejected with `invalid_input` before anything runs.
+43. **Noise floor must be finite.** If the reference or the repeat capture contains NaN or
+    infinity, `compare_captures` returns `invalid_input` instead of computing a huge noise
+    floor that would let any candidate pass. Capture tensors must be non-empty 2-D arrays
+    with matching row counts.
+44. **Report.** Arguments in the reproduce commands are shell-quoted, values containing
+    backticks keep them, and a damaged `capture.json` is skipped like a missing one.
+45. **`portcheck runs`.** A ninth CLI command lists the stored results. It is CLI only: the
+    MCP server still exposes exactly the 8 specified tools. Long finding tables in the
+    CLI are capped at 50 rows; `--json` always has everything.
+
 ## Not done (by design)
 
 Nothing in spec section 13 was attempted. See `docs/RELEASE_TEST.md`.

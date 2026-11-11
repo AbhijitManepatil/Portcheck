@@ -32,6 +32,8 @@ from portcheck.validate.workload import LoadedWorkload, load_workload
 
 CAPTURE_JSON = "capture.json"
 CAPTURE_TENSORS = "capture.safetensors"
+# Plain greedy decoding, whatever the model's own generation_config says.
+GREEDY = {"do_sample": False, "num_beams": 1, "repetition_penalty": 1.0, "no_repeat_ngram_size": 0}
 _LABEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
 
@@ -62,7 +64,7 @@ def resolve_capture(ref: str) -> tuple[str, Path]:
     if is_run_id(ref):
         if not is_run_id(ref, "capture"):
             raise InvalidInputError(f"'{ref}' is not a capture run id.")
-        directory = runs_dir() / ref
+        directory = resolve_in_root(f".portcheck/runs/{ref}")
         if (directory / CAPTURE_JSON).is_file():
             return ref, directory
         raise NotFoundError(f"No capture with run id '{ref}' under .portcheck/runs.")
@@ -89,6 +91,15 @@ def load_tensors(directory: Path) -> dict[str, np.ndarray]:
     for key in ("last_logits", "generated_ids"):
         if key not in tensors:
             raise InvalidInputError(f"Capture '{directory.name}' is missing the tensor '{key}'.")
+        if tensors[key].ndim != 2 or 0 in tensors[key].shape:
+            raise InvalidInputError(
+                f"Capture '{directory.name}': tensor '{key}' must be a non-empty 2-D array, "
+                f"but has shape {tuple(tensors[key].shape)}."
+            )
+    if tensors["last_logits"].shape[0] != tensors["generated_ids"].shape[0]:
+        raise InvalidInputError(
+            f"Capture '{directory.name}': the two tensors have different numbers of prompts."
+        )
     return tensors
 
 
@@ -243,7 +254,7 @@ def capture_run(
             seq = model.generate(
                 input_ids=input_ids,
                 attention_mask=mask,
-                do_sample=False,
+                **GREEDY,
                 max_new_tokens=wl.max_new_tokens,
                 pad_token_id=gen_pad_id,
             )
@@ -271,7 +282,7 @@ def capture_run(
                 seq = model.generate(
                     input_ids=ids_t,
                     attention_mask=mask_t,
-                    do_sample=False,
+                    **GREEDY,
                     max_new_tokens=wl.max_new_tokens,
                     pad_token_id=gen_pad_id,
                 )

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from portcheck.config import Config, load_config
-from portcheck.envelope import CaptureMismatchError, ConfigMissingError
+from portcheck.envelope import CaptureMismatchError, ConfigMissingError, InvalidInputError
 from portcheck.paths import get_root
 from portcheck.schemas import (
     Check,
@@ -107,6 +107,12 @@ def compare_captures(
         repeat_name, repeat, repeat_dir = load_capture(baseline_repeat)
         repeat_t = load_tensors(repeat_dir)
         _check_same_workload(ref_name, ref, repeat_name, repeat, ref_t, repeat_t)
+        if not (np.isfinite(a).all() and np.isfinite(repeat_t["last_logits"]).all()):
+            # A non-finite noise floor would lift the threshold and let anything pass.
+            raise InvalidInputError(
+                f"The noise floor cannot be measured: '{ref_name}' or '{repeat_name}' contains "
+                "NaN or infinite logits. Capture the reference and the repeat again."
+            )
         noise_max, noise_rel = diff_stats(a, repeat_t["last_logits"])
         noise = NoiseFloor(max_abs_diff=_sig(noise_max), mean_rel_error=_sig(noise_rel))
         if repeat.fault_injected:

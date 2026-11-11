@@ -246,7 +246,7 @@ def list_runs(kind: str | None = None) -> dict[str, Any]:
         if base.is_dir():
             for directory in base.iterdir():
                 match = RUN_ID_RE.match(directory.name)
-                if not match or not directory.is_dir():
+                if not match or not directory.is_dir() or directory.is_symlink():
                     continue
                 if kind is not None and match.group(1) != kind:
                     continue

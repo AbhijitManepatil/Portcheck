@@ -12,7 +12,11 @@ from portcheck.audit.scanner import Rule, get_rule
 from portcheck.config import Config
 from portcheck.envelope import ConfigMissingError
 
-_CUDA_INDEX_RE = re.compile(r"(?:https?://)?download\.pytorch\.org/whl/cu\d+/?")
+# A bare CUDA wheel index: nothing but an optional slash follows the cuNNN part. A URL
+# that goes on to a file (a wheel, torch_stable.html) is left for a person.
+_CUDA_INDEX_RE = re.compile(
+    r"""(?:https?://)?download\.pytorch\.org/whl/cu\d+(?=/?(?:[\s"'\\)]|$))""", re.MULTILINE
+)
 PYNVML_CALL_RE = re.compile(r"\bpynvml\.")
 
 _GUARDED_IMPORT = (
@@ -28,13 +32,13 @@ def _newline(text: str) -> str:
 
 
 def fix_pc007(text: str, filename: str, config: Config) -> str:
-    """Swap every NVIDIA base image on a FROM line for ``target.rocm_image``."""
+    """Swap every literal NVIDIA base image on a FROM line for ``target.rocm_image``."""
     rule = get_rule("PC007")
     regexes = [m.regex for m in rule.matchers if m.kind == "docker_from" and m.regex]
     targets = {
         frm.line
         for frm in parsers.parse_dockerfile(text)
-        if any(r.search(frm.image) for r in regexes)
+        if not frm.uses_arg and any(r.search(frm.image) for r in regexes)
     }
     if not targets:
         return text
@@ -44,7 +48,7 @@ def fix_pc007(text: str, filename: str, config: Config) -> str:
             "target.rocm_image is empty. Set it in portcheck.yaml to the ROCm PyTorch image "
             "you have verified, then run the step again."
         )
-    lines = text.splitlines(keepends=True)
+    lines = parsers.split_lines(text, keepends=True)
     for number in targets:
         lines[number - 1] = parsers.replace_from_image(lines[number - 1], image)
     return "".join(lines)
@@ -62,21 +66,21 @@ def _pc008_name_matches(name: str, rule: Rule) -> bool:
 
 
 def fix_pc008(text: str, filename: str, config: Config) -> str:
-    """Drop ``nvidia-*`` requirement lines and repoint CUDA wheel index URLs."""
+    """Drop ``nvidia-*`` requirement lines and repoint bare CUDA wheel index URLs."""
     rule = get_rule("PC008")
-    lines = text.splitlines(keepends=True)
+    lines = parsers.split_lines(text, keepends=True)
     if parsers.is_requirements_file(filename):
         kept: list[str] = []
         dropping = False  # inside a backslash continuation of a deleted requirement
         continuation = False
         for line in lines:
-            is_continuation, continuation = continuation, line.rstrip().endswith("\\")
+            is_continuation, continuation = continuation, parsers.continues_requirement(line)
             if is_continuation:
                 if not dropping:
                     kept.append(line)
                 continue
             name = parsers.requirement_name(line)
-            dropping = bool(name) and _pc008_name_matches(name, rule)
+            dropping = name is not None and _pc008_name_matches(name, rule)
             if not dropping:
                 kept.append(line)
         lines = kept
@@ -88,39 +92,58 @@ def fix_pc008(text: str, filename: str, config: Config) -> str:
                 "target.torch_index_url is empty. Set it in portcheck.yaml to the PyTorch ROCm "
                 "wheel index you have verified, then run the step again."
             )
-        new_text = _CUDA_INDEX_RE.sub(lambda _m: url, new_text)
+        new_text = _CUDA_INDEX_RE.sub(lambda _m: url.rstrip("/"), new_text)
     return new_text
 
 
 def fix_pc009(text: str, filename: str, config: Config) -> str:
-    """Wrap each top-level ``import pynvml`` in a try/except ImportError guard."""
+    """Wrap each top-level ``import pynvml`` that is alone on its line in a guard."""
     try:
         tree = ast.parse(text)
-    except (SyntaxError, ValueError):
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
         return text
-    starts = [node.lineno for node in tree.body]
-    spans = [
-        (node.lineno, node.end_lineno or node.lineno)
-        for node in tree.body
-        if isinstance(node, ast.Import)
-        and len(node.names) == 1
-        and node.names[0].name == "pynvml"
-        and node.names[0].asname is None
-        and starts.count(node.lineno) == 1  # alone on its line
-    ]
+    lines = parsers.split_lines(text, keepends=True)
+    spans: list[tuple[int, int, str]] = []
+    for node in tree.body:
+        if not (
+            isinstance(node, ast.Import)
+            and len(node.names) == 1
+            and node.names[0].name == "pynvml"
+            and node.names[0].asname is None
+            and node.col_offset == 0
+        ):
+            continue
+        start, end = node.lineno, node.end_lineno or node.lineno
+        # Leave it for a person if any other statement touches these lines.
+        if any(
+            other is not node
+            and other.lineno <= end
+            and (other.end_lineno or other.lineno) >= start
+            for other in tree.body
+        ):
+            continue
+        tail = lines[end - 1].rstrip("\r\n")
+        tail = tail.encode("utf-8")[node.end_col_offset or 0 :].decode("utf-8").strip()
+        if tail and not tail.startswith("#"):
+            continue  # something other than a comment follows the import
+        spans.append((start, end, tail))
     if not spans:
         return text
     newline = _newline(text)
-    lines = text.splitlines(keepends=True)
-    for start, end in sorted(spans, reverse=True):
-        lines[start - 1 : end] = [_GUARDED_IMPORT.replace("\n", newline)]
+    for start, end, comment in sorted(spans, reverse=True):
+        guard = _GUARDED_IMPORT
+        if comment:  # keep e.g. `# noqa` or `# type: ignore` on the import itself
+            guard = guard.replace("    import pynvml\n", f"    import pynvml  {comment}\n", 1)
+        if not lines[end - 1].endswith(("\n", "\r")):
+            guard = guard.rstrip("\n")  # the file had no trailing newline; keep it that way
+        lines[start - 1 : end] = [guard.replace("\n", newline)]
     return "".join(lines)
 
 
 def pynvml_call_lines(text: str) -> list[int]:
     """1-based lines that call ``pynvml.`` (for the step detail of PC009)."""
     out = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    for number, line in enumerate(parsers.split_lines(text), start=1):
         stripped = line.strip()
         if stripped.startswith(("#", "import ", "from ")):
             continue

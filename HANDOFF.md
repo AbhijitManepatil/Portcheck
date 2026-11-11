@@ -12,10 +12,13 @@ Abhijit (GitHub: `AbhijitManepatil`) asked to:
 
 ## Where things stand
 
-- **The repo exists:** https://github.com/AbhijitManepatil/Portcheck. It holds only this file, `IMPLEMENTATION_SPEC.md` and a short `README.md`.
-- **No application code is written yet.** Start at task T1.
-- The spec is finished: `IMPLEMENTATION_SPEC.md`, 14 sections, tasks T1 to T12 in section 12.
-- A human-readable spec and MVP plan also exists as a Claude doc: https://claude.ai/artifact/Tf1SygBUQ7gQkj8CjEMmwe
+*Updated 2026-11-11. The sections below this one are the original handoff notes.*
+
+- **v0.1 is built and merged to `main`:** tasks T1 to T12 of `IMPLEMENTATION_SPEC.md`, plus a hardening pass after an independent review. See `README.md` and `CHANGELOG.md`.
+- **Tested on CPU only.** The test suite runs offline, and the full flow was also run with the pinned fixture model. Nothing has run on a real NVIDIA or AMD GPU.
+- **Open points 1, 3 and part of 2 below are settled:** the distribution is named `gpu-portcheck` (the name `portcheck` is taken on PyPI); the ROCm image and wheel index defaults were looked up and are cited in `src/portcheck/defaults.yaml`; the repo's visibility was not changed.
+- **Still for the owner:** the two-GPU release test in `docs/RELEASE_TEST.md` (which also calibrates the parity thresholds), publishing to PyPI, and the IP check before making anything public.
+- Every difference from the spec is listed in `docs/SPEC_DEVIATIONS.md`.
 
 ## What the product is
 

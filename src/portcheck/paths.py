@@ -26,6 +26,8 @@ def get_root() -> Path:
 def resolve_in_root(path: str | os.PathLike[str], root: Path | None = None) -> Path:
     """Resolve ``path`` relative to the root; reject anything that lands outside it."""
     root = root or get_root()
+    if not isinstance(path, (str, os.PathLike)):
+        raise InvalidInputError("A path must be a string.")
     text = os.fspath(path)
     if "\x00" in text:
         raise InvalidInputError("Path contains a null byte.")
@@ -43,7 +45,8 @@ def rel_to_root(path: Path, root: Path | None = None) -> str:
 
 
 def runs_dir(root: Path | None = None) -> Path:
-    return (root or get_root()) / ".portcheck" / "runs"
+    """The results folder. Raises if a symlink would take it outside the root."""
+    return resolve_in_root(".portcheck/runs", root or get_root())
 
 
 def new_run_id(kind: str) -> str:
@@ -74,7 +77,7 @@ def run_dir(run_id: str, kind: str) -> Path:
     """The folder of an existing run of the given kind."""
     if not isinstance(run_id, str) or not is_run_id(run_id, kind):
         raise InvalidInputError(f"'{run_id}' is not a valid {kind} run id.")
-    path = runs_dir() / run_id
+    path = resolve_in_root(f".portcheck/runs/{run_id}")
     if not path.is_dir():
         raise NotFoundError(f"No {kind} result with run id '{run_id}' under .portcheck/runs.")
     return path
