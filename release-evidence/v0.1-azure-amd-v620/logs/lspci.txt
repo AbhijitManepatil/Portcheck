@@ -1,0 +1,1 @@
+0002:00:00.0 Display controller [0380]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:73ae]

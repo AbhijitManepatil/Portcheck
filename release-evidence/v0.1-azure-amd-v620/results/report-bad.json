@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "run_id": "report-20261112T183836Z-1ca7e2",
+  "result_path": ".portcheck/runs/report-20261112T183836Z-1ca7e2",
+  "summary": "Report written to .portcheck/runs/report-20261112T183836Z-1ca7e2/report.md (parity fail).",
+  "data": {
+    "format": "markdown",
+    "report_file": ".portcheck/runs/report-20261112T183836Z-1ca7e2/report.md",
+    "sections": [
+      "verdict",
+      "environment",
+      "parity",
+      "reproduce"
+    ],
+    "verdict": {
+      "audit_grade": null,
+      "parity_verdict": "fail",
+      "cost_ratio": null
+    },
+    "inputs": {
+      "scan_id": null,
+      "compare_id": "compare-20261112T183652Z-006c05",
+      "cost_ids": []
+    }
+  }
+}

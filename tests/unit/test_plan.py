@@ -34,6 +34,7 @@ def test_plan_records_its_scan_and_green_findings_make_no_step(fixture_repo):
 def test_pc009_detail_lists_every_pynvml_call_site(fixture_repo):
     step = plan_migration(_scan_id()).steps[2]
     assert "if pynvml is not None" in step.detail
+    assert "pynvml.NVMLError" in step.detail  # learned on a real AMD GPU: see release-evidence
     assert "import only" in step.detail
     source = (fixture_repo / "gpu_stats.py").read_text().splitlines()
     call_lines = [n for n, line in enumerate(source, 1) if "pynvml." in line]

@@ -15,7 +15,7 @@ Abhijit (GitHub: `AbhijitManepatil`) asked to:
 *Updated 2026-11-11. The sections below this one are the original handoff notes.*
 
 - **v0.1 is built and merged to `main`:** tasks T1 to T12 of `IMPLEMENTATION_SPEC.md`, plus a hardening pass after an independent review. See `README.md` and `CHANGELOG.md`.
-- **Tested on CPU only.** The test suite runs offline, and the full flow was also run with the pinned fixture model. Nothing has run on a real NVIDIA or AMD GPU.
+- **Tested on CPU and on one AMD GPU.** The test suite runs offline. On 2026-11-12 the flow was run on an Azure VM with a quarter of an AMD Radeon PRO V620 (`release-evidence/v0.1-azure-amd-v620/`). Nothing has run on an NVIDIA GPU: the Azure subscription had no NVIDIA quota.
 - **Open points 1, 3 and part of 2 below are settled:** the distribution is named `gpu-portcheck` (the name `portcheck` is taken on PyPI); the ROCm image and wheel index defaults were looked up and are cited in `src/portcheck/defaults.yaml`; the repo's visibility was not changed.
 - **Still for the owner:** the two-GPU release test in `docs/RELEASE_TEST.md` (which also calibrates the parity thresholds), publishing to PyPI, and the IP check before making anything public.
 - Every difference from the spec is listed in `docs/SPEC_DEVIATIONS.md`.

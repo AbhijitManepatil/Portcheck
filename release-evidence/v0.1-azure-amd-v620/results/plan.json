@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "run_id": "plan-20261112T181540Z-6102e8",
+  "result_path": ".portcheck/runs/plan-20261112T181540Z-6102e8",
+  "summary": "5 steps: 3 auto (applied as diffs you approve), 2 manual.",
+  "data": {
+    "scan_id": "scan-20261112T181539Z-7bbb8a",
+    "steps": [
+      {
+        "step_id": "S1",
+        "rule_id": "PC007",
+        "kind": "auto",
+        "title": "Swap base image in Dockerfile",
+        "files": [
+          "Dockerfile"
+        ],
+        "detail": "Replaces the NVIDIA image reference on the FROM line (line 1) with target.rocm_image from portcheck.yaml, keeping any 'AS <name>' suffix."
+      },
+      {
+        "step_id": "S2",
+        "rule_id": "PC008",
+        "kind": "auto",
+        "title": "Remove NVIDIA pip pins in requirements.txt",
+        "files": [
+          "requirements.txt"
+        ],
+        "detail": "Deletes nvidia-* requirement lines and replaces any download.pytorch.org/whl/cu<N> URL with target.torch_index_url from portcheck.yaml (line 3)."
+      },
+      {
+        "step_id": "S3",
+        "rule_id": "PC009",
+        "kind": "auto",
+        "title": "Guard NVML use in gpu_stats.py",
+        "files": [
+          "gpu_stats.py"
+        ],
+        "detail": "Wraps the top-level 'import pynvml' (line 3) in try/except ImportError so that pynvml is None on machines without NVML. This fix covers the import only. Lines 10, 12, 13, 15 call 'pynvml.'; each call site needs a manual 'if pynvml is not None' check."
+      },
+      {
+        "step_id": "S4",
+        "rule_id": "PC001",
+        "kind": "manual",
+        "title": "Port custom CUDA source in ext/fast_op.cu",
+        "files": [
+          "ext/fast_op.cu"
+        ],
+        "detail": "Manual work: Port this CUDA source by hand. Evaluate HIPIFY (AMD's CUDA-to-HIP translator) and SCALE (a toolchain that compiles CUDA for AMD GPUs) as starting points, then rebuild and test on the AMD machine. portcheck does not translate kernels."
+      },
+      {
+        "step_id": "S5",
+        "rule_id": "PC002",
+        "kind": "manual",
+        "title": "Replace TensorRT use in trt_backend.py",
+        "files": [
+          "trt_backend.py"
+        ],
+        "detail": "Manual work (line 3): TensorRT runs only on NVIDIA GPUs. A person must replace this code path with one that works on ROCm, for example plain PyTorch, ONNX Runtime with the MIGraphX or ROCm provider, or MIGraphX directly, and re-validate the outputs."
+      }
+    ]
+  }
+}

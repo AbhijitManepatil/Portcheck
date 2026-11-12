@@ -2,8 +2,8 @@
 
 ## 0.1.0 (unreleased)
 
-Not yet published. Tested on CPU only; the two-GPU release test in
-`docs/RELEASE_TEST.md` has not been run.
+Not yet published. Tested on CPU and on one AMD GPU (see below). Nothing has run on an
+NVIDIA GPU, so the two-GPU release test in `docs/RELEASE_TEST.md` is still open.
 
 ### Built from the spec
 
@@ -20,6 +20,19 @@ Not yet published. Tested on CPU only; the two-GPU release test in
   sources.
 - The fixture workload is pinned to SmolLM2-135M at a commit.
 - The distribution is named `gpu-portcheck`; the import name and commands are `portcheck`.
+
+### First run on a real AMD GPU
+
+Azure `Standard_NG8ads_V620_v1`; evidence in `release-evidence/v0.1-azure-amd-v620/`.
+
+- Verified: fingerprint, audit, migration, capture, compare, cost and report on an AMD
+  Radeon PRO V620 with the default ROCm wheel index and image. CPU against AMD GPU passed
+  parity; the fault-injected capture failed, as it must.
+- Fixed: `driver_version` was empty on AMD when `rocm-smi` is not installed; it now falls
+  back to the kernel module's version.
+- Fixed: the PC009 guidance now says to catch `pynvml.NVMLError`, after the migrated
+  fixture failed in a container where `pynvml` was installed without NVML.
+- Not done: nothing has run on an NVIDIA GPU.
 
 ### Hardening
 

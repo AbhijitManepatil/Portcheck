@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "run_id": "plan-20261112T181540Z-6102e8",
+  "result_path": ".portcheck/runs/plan-20261112T181540Z-6102e8",
+  "summary": "Dry run of S1: would change examples/e2e-service/Dockerfile. Nothing was written. To apply, pass dry_run=false with this diff_sha256.",
+  "data": {
+    "diff": "--- a/examples/e2e-service/Dockerfile\n+++ b/examples/e2e-service/Dockerfile\n@@ -1,4 +1,4 @@\n-FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04\n+FROM rocm/pytorch:rocm10.0_ubuntu24.04_py3.12_pytorch_release_2.13.0\n \n RUN apt-get update \\\n     && apt-get install -y --no-install-recommends python3 python3-pip \\\n",
+    "diff_sha256": "10d2e60b71fbe9d61d1505e615a364ebbd467b9f52e92bdc34cfb306605d0a13",
+    "applied": false,
+    "files": [
+      "examples/e2e-service/Dockerfile"
+    ]
+  }
+}

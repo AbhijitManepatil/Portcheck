@@ -145,8 +145,9 @@ rules:
     fix: manual
     action: >-
       NVML and nvidia-smi exist only on NVIDIA machines. Guard the import so the
-      code still loads elsewhere, and make each call site handle a missing NVML
-      (on AMD, rocm-smi or amd-smi report the same kind of data).
+      code still loads elsewhere, and make each call site handle a missing NVML:
+      pynvml can be installed where NVML is not, and nvmlInit() then raises
+      pynvml.NVMLError (on AMD, rocm-smi or amd-smi report the same kind of data).
     plan_title: "Guard NVML use in {file}"
     matchers:
       - kind: import

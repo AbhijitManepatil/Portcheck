@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "run_id": "compare-20261112T183652Z-006c05",
+  "result_path": ".portcheck/runs/compare-20261112T183652Z-006c05",
+  "summary": "Parity fail: max_abs_diff, min_cosine, top1_agreement outside threshold (max_abs_diff 149.40211 against threshold 0.001). Fault injected in: capture-20261112T183650Z-c21ed0.",
+  "data": {
+    "reference": "capture-20261112T182250Z-8d4507",
+    "candidate": "capture-20261112T183650Z-c21ed0",
+    "baseline_repeat": "capture-20261112T182904Z-7bdd9c",
+    "dtype": "float32",
+    "metrics": {
+      "max_abs_diff": 149.40211,
+      "mean_rel_error": 3.630691,
+      "min_cosine": -0.51040887,
+      "top1_agreement": 0.0,
+      "greedy_exact_match_rate": 0.0,
+      "mean_matching_prefix_tokens": 0.0
+    },
+    "noise_floor": {
+      "max_abs_diff": 0.0,
+      "mean_rel_error": 0.0
+    },
+    "thresholds": {
+      "max_abs_diff": 0.001,
+      "min_cosine": 0.999,
+      "min_top1_agreement": 0.99
+    },
+    "checks": [
+      {
+        "metric": "max_abs_diff",
+        "value": 149.40211,
+        "threshold": 0.001,
+        "passed": false
+      },
+      {
+        "metric": "min_cosine",
+        "value": -0.51040887,
+        "threshold": 0.999,
+        "passed": false
+      },
+      {
+        "metric": "top1_agreement",
+        "value": 0.0,
+        "threshold": 0.99,
+        "passed": false
+      }
+    ],
+    "verdict": "fail"
+  }
+}

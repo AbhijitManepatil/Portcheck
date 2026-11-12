@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "run_id": "plan-20261112T181540Z-6102e8",
+  "result_path": ".portcheck/runs/plan-20261112T181540Z-6102e8",
+  "summary": "Applied S3: changed examples/e2e-service/gpu_stats.py.",
+  "data": {
+    "diff": "--- a/examples/e2e-service/gpu_stats.py\n+++ b/examples/e2e-service/gpu_stats.py\n@@ -1,6 +1,9 @@\n \"\"\"GPU memory statistics through NVML.\"\"\"\n \n-import pynvml\n+try:\n+    import pynvml\n+except ImportError:  # not available on non-NVIDIA machines\n+    pynvml = None\n \n \n def memory_used():\n",
+    "diff_sha256": "5eaed07b2ec1894e7c9dc937525bce75ba2a2d36de90f0ec03992fe16c5f0d11",
+    "applied": true,
+    "files": [
+      "examples/e2e-service/gpu_stats.py"
+    ]
+  }
+}

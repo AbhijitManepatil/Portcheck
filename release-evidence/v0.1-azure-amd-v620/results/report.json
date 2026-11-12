@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "run_id": "report-20261112T183835Z-5346dd",
+  "result_path": ".portcheck/runs/report-20261112T183835Z-5346dd",
+  "summary": "Report written to .portcheck/runs/report-20261112T183835Z-5346dd/report.md (audit grade red, parity pass, cost ratio 8.6044).",
+  "data": {
+    "format": "markdown",
+    "report_file": ".portcheck/runs/report-20261112T183835Z-5346dd/report.md",
+    "sections": [
+      "verdict",
+      "environment",
+      "audit",
+      "parity",
+      "cost",
+      "reproduce"
+    ],
+    "verdict": {
+      "audit_grade": "red",
+      "parity_verdict": "pass",
+      "cost_ratio": 8.6044
+    },
+    "inputs": {
+      "scan_id": "scan-20261112T181539Z-7bbb8a",
+      "compare_id": "compare-20261112T183651Z-caa862",
+      "cost_ids": [
+        "cost-20261112T183835Z-a427ee",
+        "cost-20261112T183835Z-8b0b95"
+      ]
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "ok": true,
+  "run_id": "capture-20261112T183650Z-c21ed0",
+  "result_path": ".portcheck/runs/capture-20261112T183650Z-c21ed0",
+  "summary": "Captured 'amd-bad' on AMD Radeon Pro V620 MxGPU: 20 prompts, 3.075 tokens/s at batch size 1. Fault injected: this capture is for negative tests only.",
+  "data": {
+    "label": "amd-bad",
+    "workload": {
+      "model": "HuggingFaceTB/SmolLM2-135M",
+      "revision": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+      "task": "text-generation",
+      "dtype": "float32",
+      "prompts": "prompts.jsonl",
+      "max_new_tokens": 32,
+      "batch_sizes": [
+        1,
+        4
+      ],
+      "seed": 0
+    },
+    "workload_sha256": "929659904c410ee8689f3c9b76b117994f93d3277d620076cd864df48f4f7b30",
+    "fingerprint": {
+      "vendor": "amd",
+      "device_name": "AMD Radeon Pro V620 MxGPU",
+      "device_count": 1,
+      "torch_version": "2.15.0+rocm10.0",
+      "cuda_version": null,
+      "rocm_version": "7.15.26333",
+      "driver_version": null,
+      "python_version": "3.12.16",
+      "platform": "Linux-6.8.0-1070-azure-x86_64-with-glibc2.35",
+      "portcheck_version": "0.1.0"
+    },
+    "num_prompts": 20,
+    "fault_injected": true,
+    "bench": [
+      {
+        "batch_size": 1,
+        "tokens_generated": 160,
+        "seconds": 52.033669,
+        "tokens_per_second": 3.075,
+        "latency_p50_s": 10.388665,
+        "latency_p95_s": 10.466163
+      },
+      {
+        "batch_size": 4,
+        "tokens_generated": 640,
+        "seconds": 55.084044,
+        "tokens_per_second": 11.619,
+        "latency_p50_s": 11.030174,
+        "latency_p95_s": 11.08951
+      }
+    ],
+    "peak_memory_bytes": 590854656
+  }
+}

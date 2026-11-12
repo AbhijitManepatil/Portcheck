@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "run_id": "cost-20261112T183835Z-a427ee",
+  "result_path": ".portcheck/runs/cost-20261112T183835Z-a427ee",
+  "summary": "At 0.635 USD per hour: 1.5544 USD per million tokens at batch size 4 (the cheapest measured).",
+  "data": {
+    "capture": "capture-20261112T182951Z-08bc13",
+    "price_per_hour": 0.635,
+    "currency": "USD",
+    "rows": [
+      {
+        "batch_size": 1,
+        "tokens_per_second": 26.381,
+        "latency_p50_s": 1.214322,
+        "latency_p95_s": 1.216059,
+        "cost_per_million_tokens": 6.6862
+      },
+      {
+        "batch_size": 4,
+        "tokens_per_second": 113.48,
+        "latency_p50_s": 1.126818,
+        "latency_p95_s": 1.132429,
+        "cost_per_million_tokens": 1.5544
+      }
+    ]
+  }
+}

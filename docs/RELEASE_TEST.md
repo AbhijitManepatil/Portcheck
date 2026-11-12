@@ -7,6 +7,29 @@ to PyPI and the repository's visibility was not changed.
 Everything in this repo has so far been exercised only on CPU with a tiny random model.
 The release test is what turns "the code works" into "the tool can be trusted".
 
+## Status on 2026-11-12
+
+A partial run exists: `release-evidence/v0.1-azure-amd-v620/`. At the owner's request an
+agent rented one Azure VM with a quarter of an AMD Radeon PRO V620 and ran the flow there.
+No NVIDIA GPU was available (the subscription had no NVIDIA quota), so the reference in
+that run is the VM's own CPU.
+
+| Check from section 5 | State after the partial run |
+| --- | --- |
+| Audit accuracy | Met on the AMD machine |
+| Migration safety | Met: 3 auto steps, applied from reviewed hashes |
+| Build | Partly: the image builds and the container generates text on the AMD GPU, then exits 1 in the NVML call, which is manual work the plan lists |
+| Parity, good case | Met for CPU against AMD GPU. **Not run for NVIDIA against AMD** |
+| Parity, bad case | Met on the AMD GPU |
+| Repeatability | Met on the AMD GPU (0.3% apart) |
+| Report | Built, but with CPU and AMD, not NVIDIA and AMD |
+| Data handling | Not measured |
+| Portability | Not run on GPU hardware (tested on CPU only) |
+
+Still to do: everything that needs an NVIDIA GPU, a full (not partial) AMD GPU for
+meaningful performance numbers, and driving the run through the MCP server and skills.
+`docs/AZURE_V620_SETUP.md` has the driver steps that worked on Azure.
+
 ## 1. Before publishing anything
 
 Confirm your employment IP and outside-work terms **in writing** before any code is

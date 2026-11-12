@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "run_id": "compare-20261112T183651Z-caa862",
+  "result_path": ".portcheck/runs/compare-20261112T183651Z-caa862",
+  "summary": "Parity pass: all 3 checks passed (max_abs_diff 0.00011539459 against threshold 0.001).",
+  "data": {
+    "reference": "capture-20261112T182951Z-08bc13",
+    "candidate": "capture-20261112T182250Z-8d4507",
+    "baseline_repeat": "capture-20261112T183037Z-5aaebf",
+    "dtype": "float32",
+    "metrics": {
+      "max_abs_diff": 0.00011539459,
+      "mean_rel_error": 2.8519695e-06,
+      "min_cosine": 1.0,
+      "top1_agreement": 1.0,
+      "greedy_exact_match_rate": 1.0,
+      "mean_matching_prefix_tokens": 32.0
+    },
+    "noise_floor": {
+      "max_abs_diff": 0.0,
+      "mean_rel_error": 0.0
+    },
+    "thresholds": {
+      "max_abs_diff": 0.001,
+      "min_cosine": 0.999,
+      "min_top1_agreement": 0.99
+    },
+    "checks": [
+      {
+        "metric": "max_abs_diff",
+        "value": 0.00011539459,
+        "threshold": 0.001,
+        "passed": true
+      },
+      {
+        "metric": "min_cosine",
+        "value": 1.0,
+        "threshold": 0.999,
+        "passed": true
+      },
+      {
+        "metric": "top1_agreement",
+        "value": 1.0,
+        "threshold": 0.99,
+        "passed": true
+      }
+    ],
+    "verdict": "pass"
+  }
+}

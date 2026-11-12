@@ -1,0 +1,48 @@
+{
+  "ok": true,
+  "run_id": "scan-20261112T181541Z-849ff8",
+  "result_path": ".portcheck/runs/scan-20261112T181541Z-849ff8",
+  "summary": "Grade red: 2 red, 0 yellow, 1 green findings in 9 files.",
+  "data": {
+    "root": "examples/e2e-service",
+    "files_scanned": 9,
+    "grade": "red",
+    "counts": {
+      "red": 2,
+      "yellow": 0,
+      "green": 1
+    },
+    "findings": [
+      {
+        "rule_id": "PC001",
+        "severity": "red",
+        "title": "Custom CUDA source",
+        "file": "ext/fast_op.cu",
+        "line": null,
+        "evidence": "ext/fast_op.cu",
+        "action": "Port this CUDA source by hand. Evaluate HIPIFY (AMD's CUDA-to-HIP translator) and SCALE (a toolchain that compiles CUDA for AMD GPUs) as starting points, then rebuild and test on the AMD machine. portcheck does not translate kernels.",
+        "fix": "manual"
+      },
+      {
+        "rule_id": "PC002",
+        "severity": "red",
+        "title": "TensorRT",
+        "file": "trt_backend.py",
+        "line": 3,
+        "evidence": "import tensorrt",
+        "action": "TensorRT runs only on NVIDIA GPUs. A person must replace this code path with one that works on ROCm, for example plain PyTorch, ONNX Runtime with the MIGraphX or ROCm provider, or MIGraphX directly, and re-validate the outputs.",
+        "fix": "manual"
+      },
+      {
+        "rule_id": "PC010",
+        "severity": "green",
+        "title": "Plain torch.cuda usage",
+        "file": "serve.py",
+        "line": 29,
+        "evidence": "device = \"cuda\" if torch.cuda.is_available() else \"cpu\"",
+        "action": "No change needed. ROCm builds of PyTorch use the same torch.cuda API.",
+        "fix": "none"
+      }
+    ]
+  }
+}

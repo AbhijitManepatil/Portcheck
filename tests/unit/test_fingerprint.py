@@ -80,3 +80,15 @@ def test_broken_torch_never_raises(monkeypatch):
     torch.cuda.is_available = lambda: (_ for _ in ()).throw(RuntimeError("driver exploded"))
     monkeypatch.setitem(sys.modules, "torch", torch)
     assert env_fingerprint().vendor == "cpu"
+
+
+def test_amd_driver_falls_back_to_the_kernel_module_version(monkeypatch, tmp_path):
+    monkeypatch.setitem(sys.modules, "torch", _fake_torch(True, "7.15.26333", None))
+    monkeypatch.setattr(fp_mod, "_run", lambda cmd: None)  # rocm-smi is not installed
+    version_file = tmp_path / "version"
+    version_file.write_text("6.12.12\n")
+    monkeypatch.setattr(fp_mod, "AMDGPU_VERSION_FILE", str(version_file))
+    assert env_fingerprint().driver_version == "6.12.12"
+    monkeypatch.setattr(fp_mod, "AMDGPU_VERSION_FILE", str(tmp_path / "missing"))
+    fp = env_fingerprint()
+    assert fp.vendor == "amd" and fp.driver_version is None

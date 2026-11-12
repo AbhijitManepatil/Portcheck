@@ -184,6 +184,25 @@ or `tests/unit/test_review_findings.py`.
     report's warning is worded without figures, in keeping with item 29. The parity
     verdict is not affected.
 
+## Found on a real AMD GPU
+
+From the run recorded in `release-evidence/v0.1-azure-amd-v620/`.
+
+47. **AMD driver version fallback.** The spec reads the AMD driver version from
+    `rocm-smi`. PyTorch's ROCm wheels bundle ROCm, so `rocm-smi` is often not installed;
+    the fingerprint then reads the kernel module's version from
+    `/sys/module/amdgpu/version`.
+48. **PC009 guidance.** The step detail and the rule's action still name the
+    `if pynvml is not None` check the spec asks for, and now add that `nvmlInit()` raises
+    `pynvml.NVMLError` when the package is installed on a machine without NVML, so that
+    must be caught too. The migrated fixture hit exactly this in a container.
+49. **`rocm_version` is the HIP version.** As the spec defines it (`torch.version.hip`),
+    the field holds PyTorch's HIP version, for example `7.15.26333` for the ROCm 10.0
+    build, not the ROCm release number.
+
 ## Not done (by design)
 
-Nothing in spec section 13 was attempted. See `docs/RELEASE_TEST.md`.
+The full release test in spec section 13 has not been run. At the owner's request, the AMD
+half was run on a rented Azure VM (`release-evidence/v0.1-azure-amd-v620/`); no NVIDIA GPU
+was available, nothing was published to PyPI, and the repository's visibility was not
+changed. See `docs/RELEASE_TEST.md`.

@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "run_id": "compare-20261112T183652Z-22fddc",
+  "result_path": ".portcheck/runs/compare-20261112T183652Z-22fddc",
+  "summary": "Parity pass: all 3 checks passed (max_abs_diff 0.0 against threshold 0.001). No repeat capture was given, so the noise floor is zero.",
+  "data": {
+    "reference": "capture-20261112T182250Z-8d4507",
+    "candidate": "capture-20261112T182904Z-7bdd9c",
+    "baseline_repeat": null,
+    "dtype": "float32",
+    "metrics": {
+      "max_abs_diff": 0.0,
+      "mean_rel_error": 0.0,
+      "min_cosine": 1.0,
+      "top1_agreement": 1.0,
+      "greedy_exact_match_rate": 1.0,
+      "mean_matching_prefix_tokens": 32.0
+    },
+    "noise_floor": {
+      "max_abs_diff": 0.0,
+      "mean_rel_error": 0.0
+    },
+    "thresholds": {
+      "max_abs_diff": 0.001,
+      "min_cosine": 0.999,
+      "min_top1_agreement": 0.99
+    },
+    "checks": [
+      {
+        "metric": "max_abs_diff",
+        "value": 0.0,
+        "threshold": 0.001,
+        "passed": true
+      },
+      {
+        "metric": "min_cosine",
+        "value": 1.0,
+        "threshold": 0.999,
+        "passed": true
+      },
+      {
+        "metric": "top1_agreement",
+        "value": 1.0,
+        "threshold": 0.99,
+        "passed": true
+      }
+    ],
+    "verdict": "pass"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "run_id": null,
+  "result_path": null,
+  "summary": "This machine is amd: AMD Radeon Pro V620 MxGPU x1, ROCm 7.15.26333, driver 6.12.12, torch 2.15.0+rocm10.0.",
+  "data": {
+    "vendor": "amd",
+    "device_name": "AMD Radeon Pro V620 MxGPU",
+    "device_count": 1,
+    "torch_version": "2.15.0+rocm10.0",
+    "cuda_version": null,
+    "rocm_version": "7.15.26333",
+    "driver_version": "6.12.12",
+    "python_version": "3.12.16",
+    "platform": "Linux-6.8.0-1070-azure-x86_64-with-glibc2.35",
+    "portcheck_version": "0.1.0"
+  }
+}

@@ -52,7 +52,9 @@ def _auto_detail(rule_id: str, scan_root: str, file: str, findings: list[Finding
             verb = "calls" if len(calls) == 1 else "call"
             detail += (
                 f" {label} {', '.join(str(n) for n in calls)} {verb} 'pynvml.'; each call site "
-                "needs a manual 'if pynvml is not None' check."
+                "needs a manual 'if pynvml is not None' check. That check alone is not enough "
+                "when the pynvml package is installed on a machine without NVML: nvmlInit() "
+                "then raises pynvml.NVMLError, so catch that too (seen on an AMD GPU)."
             )
         else:
             detail += " No 'pynvml.' call sites were found in this file."

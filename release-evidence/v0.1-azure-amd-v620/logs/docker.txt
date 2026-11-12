@@ -1,0 +1,45 @@
+== docker.log
+### install 18:39:19
+apt exit 0
+FROM rocm/pytorch:rocm10.0_ubuntu24.04_py3.12_pytorch_release_2.13.0
+### build 18:39:30
+build exit 0
+Step 7/7 : ENTRYPOINT ["python3", "serve.py"]
+ ---> Running in e0c32464a847
+ ---> Removed intermediate container e0c32464a847
+ ---> c37def5683fe
+Successfully built c37def5683fe
+Successfully tagged pc-fixture:latest
+### run 18:54:48
+run exit 1
+The capital of France is the capital of the country.
+
+The capital of France is the capital of the country.
+    _nvmlCheckReturn(NVML_ERROR_LIBRARY_NOT_FOUND)
+  File "/opt/venv/lib/python3.12/site-packages/pynvml.py", line 1116, in _nvmlCheckReturn
+    raise NVMLError(ret)
+pynvml.NVMLError_LibraryNotFound: NVML Shared Library Not Found
+pc-fixture:latest 51.9GB
+rocm/pytorch:rocm10.0_ubuntu24.04_py3.12_pytorch_release_2.13.0 51.7GB
+### done 18:55:39
+== docker-run.out
+The capital of France is the capital of the country.
+
+The capital of France is the capital of the country.
+
+The capital of France is the capital of the country.
+== docker-run.err (tail)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/gpu_stats.py", line 13, in memory_used
+    pynvml.nvmlInit()
+  File "/opt/venv/lib/python3.12/site-packages/pynvml.py", line 3162, in nvmlInit
+    nvmlInitWithFlags(0)
+  File "/opt/venv/lib/python3.12/site-packages/pynvml.py", line 3145, in nvmlInitWithFlags
+    _LoadNvmlLibrary()
+  File "/opt/venv/lib/python3.12/site-packages/pynvml.py", line 3192, in _LoadNvmlLibrary
+    _nvmlCheckReturn(NVML_ERROR_LIBRARY_NOT_FOUND)
+  File "/opt/venv/lib/python3.12/site-packages/pynvml.py", line 1116, in _nvmlCheckReturn
+    raise NVMLError(ret)
+pynvml.NVMLError_LibraryNotFound: NVML Shared Library Not Found
+== docker version
+Docker version 29.1.3, build 29.1.3-0ubuntu3~22.04.2

@@ -6,11 +6,13 @@ import platform
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 from portcheck import __version__
 from portcheck.schemas import Fingerprint
 
 _SMI_TIMEOUT_S = 5
+AMDGPU_VERSION_FILE = "/sys/module/amdgpu/version"
 
 
 def _run(cmd: list[str]) -> str | None:
@@ -35,10 +37,17 @@ def _nvidia_driver() -> str | None:
 
 def _amd_driver() -> str | None:
     out = _run(["rocm-smi", "--showdriverversion"])
-    if not out:
+    if out:
+        match = re.search(r"driver version\s*:\s*(\S+)", out, re.IGNORECASE)
+        if match:
+            return match.group(1)
+    # PyTorch's ROCm wheels bundle the ROCm libraries, so rocm-smi is often not
+    # installed. The kernel module reports its own version (seen on Azure NGads V620).
+    try:
+        version = Path(AMDGPU_VERSION_FILE).read_text(encoding="utf-8").strip()
+    except OSError:
         return None
-    match = re.search(r"driver version\s*:\s*(\S+)", out, re.IGNORECASE)
-    return match.group(1) if match else None
+    return version or None
 
 
 def env_fingerprint() -> Fingerprint:

@@ -1,0 +1,30 @@
+[   36.592017] amdgpu 0002:00:00.0: amdgpu: detected ip block number 2 <psp>
+[   36.592019] amdgpu 0002:00:00.0: amdgpu: detected ip block number 3 <navi10_ih>
+[   36.592021] amdgpu 0002:00:00.0: amdgpu: detected ip block number 4 <smu>
+[   36.592026] amdgpu 0002:00:00.0: amdgpu: detected ip block number 5 <amdgpu_vkms>
+[   36.592028] amdgpu 0002:00:00.0: amdgpu: detected ip block number 6 <gfx_v10_0>
+[   36.592031] amdgpu 0002:00:00.0: amdgpu: detected ip block number 7 <sdma_v5_2>
+[   36.592033] amdgpu 0002:00:00.0: amdgpu: detected ip block number 8 <vcn_v3_0>
+[   36.605194] amdgpu 0002:00:00.0: amdgpu: Fetched VBIOS from VRAM BAR
+[   36.605199] amdgpu: ATOM BIOS: 113-D6030120-104
+[   36.613761] amdgpu 0002:00:00.0: amdgpu: Trusted Memory Zone (TMZ) feature disabled as experimental (default)
+[   36.613844] amdgpu 0002:00:00.0: amdgpu: VRAM: 7568M 0x0000008000000000 - 0x00000081D8FFFFFF (7568M used)
+[   36.613848] amdgpu 0002:00:00.0: amdgpu: GART: 512M 0x0000000000000000 - 0x000000001FFFFFFF
+[   36.614008] [drm] amdgpu: 7568M of VRAM memory ready
+[   36.614011] [drm] amdgpu: 7993M of GTT memory ready.
+[   36.798685] amdgpu: HMM registered 7568MB device memory
+[   36.800152] kfd kfd: amdgpu: Allocated 3969056 bytes on gart
+[   36.800165] kfd kfd: amdgpu: Total number of KFD nodes to be created: 1
+[   36.800422] amdgpu: Virtual CRAT table created for GPU
+[   36.800999] amdgpu: Topology: Add dGPU node [0x73ae:0x1002]
+[   36.801003] kfd kfd: amdgpu: added device 1002:73ae
+[   36.801200] amdgpu 0002:00:00.0: amdgpu: SE 4, SH per SE 2, CU per SH 10, active_cu_number 72
+[   36.811301] amdgpu 0002:00:00.0: amdgpu: Runtime PM not available
+[   36.811562] [drm] Initialized amdgpu 3.63.0 20150101 for 0002:00:00.0 on minor 0
+[   36.812168] amdgpu 0002:00:00.0: [drm] fb1: amdgpudrmfb frame buffer device
+[  192.012936] amdgpu: Freeing queue vital buffer 0x7a0104c00000, queue evicted
+[  333.283729] amdgpu: Freeing queue vital buffer 0x7a51e1400000, queue evicted
+[  708.219787] amdgpu: Freeing queue vital buffer 0x774069400000, queue evicted
+[ 1082.353671] amdgpu: Freeing queue vital buffer 0x7cb645400000, queue evicted
+[ 1548.271959] amdgpu: Freeing queue vital buffer 0x78a4a1600000, queue evicted
+[ 1607.555435] amdgpu: Freeing queue vital buffer 0x7fdabe600000, queue evicted

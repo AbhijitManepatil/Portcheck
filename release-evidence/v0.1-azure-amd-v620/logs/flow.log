@@ -1,0 +1,42 @@
+### scan 18:15:39
+Grade red: 2 red, 3 yellow, 1 green findings in 9 files.
+severity  rule   file              line  fix     title
+--------  -----  ----------------  ----  ------  -----------------------
+red       PC001  ext/fast_op.cu          manual  Custom CUDA source
+red       PC002  trt_backend.py    3     manual  TensorRT
+yellow    PC007  Dockerfile        1     auto    NVIDIA base image
+yellow    PC009  gpu_stats.py      3     auto    NVML or nvidia-smi call
+yellow    PC008  requirements.txt  3     auto    NVIDIA pip pins
+green     PC010  serve.py          29    none    Plain torch.cuda usage
+### plan 18:15:40
+Applied S1: changed examples/e2e-service/Dockerfile.
+Applied S2: changed examples/e2e-service/requirements.txt.
+Applied S3: changed examples/e2e-service/gpu_stats.py.
+Grade red: 2 red, 0 yellow, 1 green findings in 9 files.
+### serve 18:15:41
+serve exit 0
+The capital of France is the capital of the country.
+
+The capital of France is the capital of the country.
+
+The capital of France is the capital of the country.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/272 [00:00<?, ?it/s]Loading weights: 100%|██████████| 272/272 [00:00<00:00, 5895.50it/s]
+### capture amd-ref 18:16:36
+Captured 'amd-ref' on AMD Radeon Pro V620 MxGPU: 20 prompts, 3.066 tokens/s at batch size 1.
+### capture amd-repeat 18:22:51
+Captured 'amd-repeat' on AMD Radeon Pro V620 MxGPU: 20 prompts, 3.076 tokens/s at batch size 1.
+### capture cpu-ref 18:29:05
+Captured 'cpu-ref' on cpu: 20 prompts, 26.381 tokens/s at batch size 1.
+### capture cpu-repeat 18:29:52
+Captured 'cpu-repeat' on cpu: 20 prompts, 26.736 tokens/s at batch size 1.
+### capture amd-bad 18:30:38
+Captured 'amd-bad' on AMD Radeon Pro V620 MxGPU: 20 prompts, 3.075 tokens/s at batch size 1. Fault injected: this capture is for negative tests only.
+### compare 18:36:51
+exit 0
+Parity pass: all 3 checks passed (max_abs_diff 0.00011539459 against threshold 0.001).
+exit 0
+Parity pass: all 3 checks passed (max_abs_diff 0.0 against threshold 0.001). No repeat capture was given, so the noise floor is zero.
+exit 2
+Parity fail: max_abs_diff, min_cosine, top1_agreement outside threshold (max_abs_diff 149.40211 against threshold 0.001). Fault injected in: capture-20261112T183650Z-c21ed0.
+### done 18:36:52

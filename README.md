@@ -21,14 +21,19 @@ Everything runs on your machine. The only network use is the model download that
 
 ## Status
 
-**v0.1, pre-release.** The code and its test suite are complete, but everything has been
-run **on CPU only**, with a tiny random model. It has not yet been run on real NVIDIA or
-AMD GPUs. That release test is a human step: see [`docs/RELEASE_TEST.md`](docs/RELEASE_TEST.md).
-Until it is done:
+**v0.1, pre-release.** The code and its test suite are complete. It has been run on one
+real AMD GPU (a quarter of a Radeon PRO V620 on Azure): the audit, the migration, parity of
+CPU against AMD GPU (pass), a fault-injected run (fail, as it must) and the report all
+worked. The evidence is in
+[`release-evidence/v0.1-azure-amd-v620/`](release-evidence/v0.1-azure-amd-v620/README.md).
+**It has not been run on an NVIDIA GPU**, so NVIDIA-versus-AMD parity and cost are still
+untested. The remaining release test is described in
+[`docs/RELEASE_TEST.md`](docs/RELEASE_TEST.md). Until it is done:
 
-- the parity thresholds are starting guesses, not calibrated values
-- the default `target.rocm_image` and `target.torch_index_url` (both ROCm 10.0) were
-  confirmed to exist, but have not been pulled, installed or run on an AMD GPU
+- the parity thresholds are starting guesses with one real data point (CPU against AMD GPU
+  differed by about a ninth of the float32 floor), not calibrated values
+- the default `target.rocm_image` and `target.torch_index_url` (both ROCm 10.0) worked on
+  that one AMD GPU; check them against your own GPU and driver
 - the package is not on PyPI yet; install it from this repository. Its distribution name
   is `gpu-portcheck`. **Do not run `pip install portcheck`:** that name on PyPI belongs to
   a different, unrelated project
@@ -259,6 +264,8 @@ Rules are data: see `src/portcheck/audit/rules.yaml`.
 - [`IMPLEMENTATION_SPEC.md`](IMPLEMENTATION_SPEC.md): the build spec.
 - [`docs/SPEC_DEVIATIONS.md`](docs/SPEC_DEVIATIONS.md): where the implementation differs from the spec, and why.
 - [`docs/RELEASE_TEST.md`](docs/RELEASE_TEST.md): the human runbook for the two-GPU release test.
+- [`docs/AZURE_V620_SETUP.md`](docs/AZURE_V620_SETUP.md): driver steps that worked on an Azure AMD GPU VM.
+- [`release-evidence/`](release-evidence/): results from runs on real hardware.
 - [`CHANGELOG.md`](CHANGELOG.md): what changed.
 - [`HANDOFF.md`](HANDOFF.md): project context and open points for the owner.
 

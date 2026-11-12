@@ -1,0 +1,12 @@
+[
+  {
+    "productName": "Virtual Machines NGadsV620v1 Series",
+    "skuName": "NG8adsV620",
+    "armSkuName": "Standard_NG8ads_V620_v1",
+    "armRegionName": "eastus2",
+    "retailPrice": 0.635,
+    "currencyCode": "USD",
+    "unitOfMeasure": "1 Hour",
+    "effectiveStartDate": "2025-04-01T00:00:00Z"
+  }
+]
